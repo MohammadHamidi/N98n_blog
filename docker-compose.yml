@@ -64,15 +64,22 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:            # ← mapping fixed here
-      API_URL: "http://213.139.72.122:3000/api"       # front-end talks to /api (same origin)
+
+    # runtime env-vars (optional now)
+    environment:
       NODE_ENV: ${NODE_ENV:-production}
+
+    # ⬇️  NEW — forward every /api/* to the backend service
+    command: ["http-server", "public", "-p", "8080", "-P", "http://backend:3000"]
+
     ports:
       - "${FRONTEND_PORT:-8080}:8080"
+
     depends_on:
       backend:
         condition: service_healthy
     networks: [blog-network]
+
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health.html"]
       <<: *default-healthcheck
