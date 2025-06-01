@@ -1,42 +1,856 @@
-## Dockerfile
+## .env
 
 ```
-# Backend Dockerfile
-FROM node:18-alpine
+###############################################################################
+# Local development / test environment                                        #
+###############################################################################
 
-# Set working directory
-WORKDIR /app
+# App runtime
+NODE_ENV=development            # change to "production" for a real deploy
 
-# Create uploads directory
-RUN mkdir -p uploads
+###############################################################################
+# MongoDB (inside Docker)
+###############################################################################
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=admin123
+MONGO_DATABASE=n8bn_blog
+MONGO_PORT=27017                # host‑side port → container 27017
 
-# Copy package files
-COPY package*.json ./
+###############################################################################
+# Backend & Frontend
+###############################################################################
+BACKEND_PORT=3000               # host‑side
+FRONTEND_PORT=8080              # host‑side
+FRONTEND_URL=http://localhost:8080
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+###############################################################################
+# JWT auth
+###############################################################################
+JWT_SECRET=dev-secret-change-me # replace with a long random string before prod
+JWT_EXPIRES_IN=7d
 
-# Copy source code
-COPY src/ ./src/
+###############################################################################
+# Optional reverse‑proxy and admin UI
+###############################################################################
+NGINX_PORT=80                   # mapped only if you run the nginx profile
+NGINX_SSL_PORT=443
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodeuser -u 1001
+MONGO_EXPRESS_PORT=8081         # admin UI
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=admin123
+```
 
-# Change ownership of uploads directory
-RUN chown -R nodeuser:nodejs /app/uploads
+## .env_example
 
-# Switch to non-root user
-USER nodeuser
+```
+###############################################################################
+# 🗄️  MongoDB
+###############################################################################
+MONGO_ROOT_USERNAME=admin              # root user created at container init
+MONGO_ROOT_PASSWORD=admin123           # change me in production!
+MONGO_DATABASE=n8bn_blog               # default DB created at init
+MONGO_PORT=27017                       # host port → container 27017
 
-# Expose port
-EXPOSE 3000
+###############################################################################
+# 🛠️  Application settings
+###############################################################################
+NODE_ENV=production                    # or "development"
+BACKEND_PORT=3000                      # host port → container 3000
+FRONTEND_PORT=8080                     # host port → container 8080
+FRONTEND_URL=http://localhost:8080     # used by the backend for CORS / links
 
-# Health check - Fixed to handle errors properly
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
-# Start the application
-CMD ["node", "src/app.js"]
+###############################################################################
+# 🔐  JWT authentication
+###############################################################################
+JWT_SECRET=please-change-me-now        # any long random string
+JWT_EXPIRES_IN=7d                      # 1h, 12h, 30d … anything `jsonwebtoken` accepts
+
+###############################################################################
+# 🛡️  Optional Nginx reverse-proxy
+###############################################################################
+NGINX_PORT=80                          # host port for plain HTTP
+NGINX_SSL_PORT=443                     # host port for HTTPS (if you mount certs)
+
+###############################################################################
+# 📊  Mongo Express (admin UI) – optional profile
+###############################################################################
+MONGO_EXPRESS_USERNAME=admin
+MONGO_EXPRESS_PASSWORD=admin123
+MONGO_EXPRESS_PORT=8081                # host port → container 8081
+```
+
+## .gitattributes
+
+```
+# Auto detect text files and perform LF normalization
+* text=auto
+```
+
+## .gitignore
+
+```
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Directory for instrumented libs generated by jscoverage/JSCover
+lib-cov
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/blog/next-9-1#public-directory-support
+# public
+
+# vuepress build output
+.vuepress/dist
+
+# vuepress v2.x temp and cache directory
+.temp
+.cache
+
+# Docusaurus cache and generated files
+.docusaurus
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+```
+
+## blog_deploy.sh
+
+```
+#!/bin/bash
+# deploy.sh - Production deployment script
+
+set -e
+
+echo "🚀 Starting N8BN Blog deployment..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+PROJECT_NAME="n8bn-blog"
+BACKUP_DIR="./backups"
+LOG_FILE="./deploy.log"
+
+# Functions
+log() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a $LOG_FILE
+}
+
+success() {
+    echo -e "${GREEN}✅ $1${NC}" | tee -a $LOG_FILE
+}
+
+warning() {
+    echo -e "${YELLOW}⚠️ $1${NC}" | tee -a $LOG_FILE
+}
+
+error() {
+    echo -e "${RED}❌ $1${NC}" | tee -a $LOG_FILE
+    exit 1
+}
+
+# Check prerequisites
+check_prerequisites() {
+    log "Checking prerequisites..."
+    
+    if ! command -v docker &> /dev/null; then
+        error "Docker is not installed"
+    fi
+    
+    if ! command -v docker-compose &> /dev/null; then
+        error "Docker Compose is not installed"
+    fi
+    
+    if [ ! -f ".env" ]; then
+        warning ".env file not found, creating from .env.example"
+        if [ -f ".env.example" ]; then
+            cp .env.example .env
+            warning "Please edit .env file with your configuration"
+        else
+            error ".env.example file not found"
+        fi
+    fi
+    
+    success "Prerequisites check passed"
+}
+
+# Create necessary directories
+create_directories() {
+    log "Creating necessary directories..."
+    
+    mkdir -p $BACKUP_DIR
+    mkdir -p backend/uploads
+    mkdir -p backend/logs
+    mkdir -p nginx/logs
+    mkdir -p ssl
+    
+    success "Directories created"
+}
+
+# Backup existing data
+backup_data() {
+    if [ "$1" = "--skip-backup" ]; then
+        warning "Skipping backup as requested"
+        return
+    fi
+    
+    log "Creating backup..."
+    
+    BACKUP_NAME="backup-$(date +'%Y%m%d-%H%M%S')"
+    BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
+    
+    mkdir -p $BACKUP_PATH
+    
+    # Backup MongoDB if running
+    if docker ps | grep -q "$PROJECT_NAME-mongo"; then
+        log "Backing up MongoDB..."
+        docker exec "$PROJECT_NAME-mongo" mongodump --out /tmp/backup
+        docker cp "$PROJECT_NAME-mongo:/tmp/backup" "$BACKUP_PATH/mongodb"
+        success "MongoDB backup completed"
+    fi
+    
+    # Backup uploads
+    if [ -d "backend/uploads" ]; then
+        log "Backing up uploads..."
+        cp -r backend/uploads "$BACKUP_PATH/"
+        success "Uploads backup completed"
+    fi
+    
+    success "Backup completed: $BACKUP_PATH"
+}
+
+# Build and deploy
+deploy() {
+    log "Starting deployment..."
+    
+    # Stop existing containers
+    log "Stopping existing containers..."
+    docker-compose down --remove-orphans
+    
+    # Pull latest images (if using remote images)
+    log "Pulling latest images..."
+    docker-compose pull --ignore-pull-failures
+    
+    # Build images
+    log "Building images..."
+    docker-compose build --no-cache
+    
+    # Start services
+    log "Starting services..."
+    if [ "$1" = "--with-nginx" ]; then
+        docker-compose --profile nginx up -d
+    elif [ "$1" = "--with-admin" ]; then
+        docker-compose --profile admin up -d
+    elif [ "$1" = "--full" ]; then
+        docker-compose --profile nginx --profile admin up -d
+    else
+        docker-compose up -d
+    fi
+    
+    success "Services started"
+}
+
+# Health checks
+health_check() {
+    log "Performing health checks..."
+    
+    # Wait for services to start
+    sleep 30
+    
+    # Check backend
+    log "Checking backend health..."
+    if curl -f http://localhost:3000/health &> /dev/null; then
+        success "Backend is healthy"
+    else
+        error "Backend health check failed"
+    fi
+    
+    # Check frontend
+    log "Checking frontend health..."
+    if curl -f http://localhost:8080/health.html &> /dev/null; then
+        success "Frontend is healthy"
+    else
+        error "Frontend health check failed"
+    fi
+    
+    # Check MongoDB
+    log "Checking MongoDB health..."
+    if docker exec "$PROJECT_NAME-mongo" mongosh --eval "db.adminCommand('ping')" &> /dev/null; then
+        success "MongoDB is healthy"
+    else
+        error "MongoDB health check failed"
+    fi
+    
+    success "All health checks passed"
+}
+
+# Show status
+show_status() {
+    log "Deployment status:"
+    echo ""
+    docker-compose ps
+    echo ""
+    
+    echo "📊 Service URLs:"
+    echo "🌐 Blog: http://localhost:8080"
+    echo "📝 Admin Panel: http://localhost:8080/admin.html"
+    echo "🔧 API: http://localhost:3000"
+    echo "💾 API Health: http://localhost:3000/health"
+    
+    if docker ps | grep -q "$PROJECT_NAME-mongo-express"; then
+        echo "📊 MongoDB Admin: http://localhost:8081"
+    fi
+    
+    if docker ps | grep -q "$PROJECT_NAME-nginx"; then
+        echo "🚀 Nginx Proxy: http://localhost:80"
+    fi
+    
+    echo ""
+    echo "📁 Important paths:"
+    echo "📂 Uploads: ./backend/uploads"
+    echo "📄 Logs: ./backend/logs"
+    echo "💾 Backups: ./backups"
+    echo ""
+}
+
+# Cleanup old backups
+cleanup_backups() {
+    log "Cleaning up old backups..."
+    
+    # Keep only last 10 backups
+    if [ -d "$BACKUP_DIR" ]; then
+        ls -t $BACKUP_DIR | tail -n +11 | xargs -r -I {} rm -rf "$BACKUP_DIR/{}"
+        success "Old backups cleaned up"
+    fi
+}
+
+# Main deployment function
+main() {
+    echo "🚀 N8BN Blog Deployment Script"
+    echo "=============================="
+    
+    case "${1:-deploy}" in
+        "deploy")
+            check_prerequisites
+            create_directories
+            backup_data $2
+            deploy $2
+            health_check
+            cleanup_backups
+            show_status
+            success "Deployment completed successfully!"
+            ;;
+        "backup")
+            backup_data
+            ;;
+        "restore")
+            if [ -z "$2" ]; then
+                error "Please specify backup directory: ./deploy.sh restore backup-20231201-120000"
+            fi
+            restore_backup $2
+            ;;
+        "status")
+            show_status
+            ;;
+        "logs")
+            docker-compose logs -f ${2:-}
+            ;;
+        "stop")
+            docker-compose down
+            success "Services stopped"
+            ;;
+        "restart")
+            docker-compose restart ${2:-}
+            success "Services restarted"
+            ;;
+        "update")
+            backup_data
+            docker-compose pull
+            docker-compose up -d
+            health_check
+            success "Services updated"
+            ;;
+        *)
+            echo "Usage: $0 {deploy|backup|restore|status|logs|stop|restart|update}"
+            echo ""
+            echo "Commands:"
+            echo "  deploy [--with-nginx|--with-admin|--full] [--skip-backup]"
+            echo "  backup"
+            echo "  restore <backup-directory>"
+            echo "  status"
+            echo "  logs [service-name]"
+            echo "  stop"
+            echo "  restart [service-name]"
+            echo "  update"
+            echo ""
+            echo "Examples:"
+            echo "  $0 deploy --with-nginx"
+            echo "  $0 deploy --full --skip-backup"
+            echo "  $0 logs backend"
+            echo "  $0 restore backup-20231201-120000"
+            ;;
+    esac
+}
+
+# Make script executable and run
+main "$@"
+
+# Additional utility scripts
+
+# scripts/seed-data.sh
+#!/bin/bash
+# Seed database with sample data
+
+echo "🌱 Seeding database with sample data..."
+
+# Wait for MongoDB to be ready
+echo "Waiting for MongoDB to be ready..."
+until docker exec n8bn-blog-mongo mongosh --eval "db.adminCommand('ping')" &> /dev/null; do
+    sleep 2
+done
+
+# Run the seeding script
+docker exec n8bn-blog-mongo mongosh n8bn_blog --eval "
+// Sample categories
+db.categories.insertMany([
+  {
+    name: 'Unity Development',
+    slug: 'unity-development',
+    description: 'آموزش‌های مربوط به توسعه بازی با Unity',
+    color: '#667eea',
+    icon: 'fas fa-gamepad',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    name: 'MQ5 Trading',
+    slug: 'mq5-trading',
+    description: 'برنامه‌نویسی ربات‌های معاملاتی',
+    color: '#28a745',
+    icon: 'fas fa-chart-line',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]);
+
+// Sample tags
+db.tags.insertMany([
+  { name: 'Unity', slug: 'unity', color: '#667eea', isActive: true, createdAt: new Date(), updatedAt: new Date() },
+  { name: 'C#', slug: 'csharp', color: '#fd7e14', isActive: true, createdAt: new Date(), updatedAt: new Date() },
+  { name: 'MQ5', slug: 'mq5', color: '#28a745', isActive: true, createdAt: new Date(), updatedAt: new Date() }
+]);
+
+print('✅ Sample data inserted successfully!');
+"
+
+echo "✅ Database seeding completed!"
+
+# scripts/ssl-setup.sh
+#!/bin/bash
+# SSL certificate setup for production
+
+echo "🔒 Setting up SSL certificates..."
+
+# Create SSL directory
+mkdir -p ssl
+
+# Option 1: Self-signed certificate (for development)
+if [ "$1" = "--self-signed" ]; then
+    echo "Creating self-signed certificate..."
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout ssl/key.pem \
+        -out ssl/cert.pem \
+        -subj "/C=IR/ST=Tehran/L=Tehran/O=N8BN/OU=Blog/CN=localhost"
+    
+    echo "✅ Self-signed certificate created"
+    echo "⚠️ Remember to add certificate exception in browser"
+fi
+
+# Option 2: Let's Encrypt (for production)
+if [ "$1" = "--letsencrypt" ]; then
+    if [ -z "$2" ]; then
+        echo "❌ Please provide domain name: $0 --letsencrypt yourdomain.com"
+        exit 1
+    fi
+    
+    DOMAIN=$2
+    echo "Setting up Let's Encrypt for $DOMAIN..."
+    
+    # Install certbot if not available
+    if ! command -v certbot &> /dev/null; then
+        echo "Installing certbot..."
+        apt-get update
+        apt-get install -y certbot
+    fi
+    
+    # Get certificate
+    certbot certonly --standalone \
+        --email admin@$DOMAIN \
+        --agree-tos \
+        --no-eff-email \
+        -d $DOMAIN
+    
+    # Copy certificates
+    cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem ssl/cert.pem
+    cp /etc/letsencrypt/live/$DOMAIN/privkey.pem ssl/key.pem
+    
+    echo "✅ Let's Encrypt certificate setup completed"
+    echo "🔄 Don't forget to setup auto-renewal"
+fi
+
+echo "SSL setup completed!"
+
+# scripts/monitoring.sh
+#!/bin/bash
+# Simple monitoring script
+
+echo "📊 N8BN Blog Monitoring"
+echo "======================="
+
+# Check container status
+echo "📦 Container Status:"
+docker-compose ps
+
+echo ""
+echo "💾 Memory Usage:"
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
+
+echo ""
+echo "📊 Database Statistics:"
+docker exec n8bn-blog-mongo mongosh n8bn_blog --eval "
+print('Posts:', db.posts.countDocuments());
+print('Categories:', db.categories.countDocuments());
+print('Tags:', db.tags.countDocuments());
+print('Total Views:', db.posts.aggregate([{\\$group: {_id: null, total: {\\$sum: '\\$views'}}}]).toArray()[0]?.total || 0);
+"
+
+echo ""
+echo "📁 Disk Usage:"
+echo "Uploads: $(du -sh backend/uploads 2>/dev/null || echo '0B')"
+echo "Logs: $(du -sh backend/logs 2>/dev/null || echo '0B')"
+echo "Backups: $(du -sh backups 2>/dev/null || echo '0B')"
+
+echo ""
+echo "🌐 Service Health:"
+curl -s http://localhost:3000/health && echo " ✅ Backend healthy" || echo " ❌ Backend unhealthy"
+curl -s http://localhost:8080/health.html >/dev/null && echo "✅ Frontend healthy" || echo "❌ Frontend unhealthy"
+
+# Makefile for easy commands
+# Makefile
+
+.PHONY: help install start stop restart logs status backup deploy clean
+
+help: ## Show this help message
+	@echo "N8BN Blog - Available Commands:"
+	@echo "================================"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+install: ## Install and setup the project
+	@echo "🚀 Installing N8BN Blog..."
+	@cp .env.example .env || true
+	@echo "📝 Please edit .env file with your configuration"
+	@echo "✅ Installation completed"
+
+start: ## Start all services
+	@echo "🚀 Starting services..."
+	@docker-compose up -d
+	@echo "✅ Services started"
+
+start-full: ## Start all services including nginx and admin
+	@echo "🚀 Starting all services..."
+	@docker-compose --profile nginx --profile admin up -d
+	@echo "✅ All services started"
+
+stop: ## Stop all services
+	@echo "🛑 Stopping services..."
+	@docker-compose down
+	@echo "✅ Services stopped"
+
+restart: ## Restart all services
+	@echo "🔄 Restarting services..."
+	@docker-compose restart
+	@echo "✅ Services restarted"
+
+logs: ## Show logs for all services
+	@docker-compose logs -f
+
+logs-backend: ## Show backend logs
+	@docker-compose logs -f backend
+
+logs-frontend: ## Show frontend logs
+	@docker-compose logs -f frontend
+
+status: ## Show status of all services
+	@echo "📊 Service Status:"
+	@docker-compose ps
+	@echo ""
+	@echo "🌐 Service URLs:"
+	@echo "Blog: http://localhost:8080"
+	@echo "Admin: http://localhost:8080/admin.html"
+	@echo "API: http://localhost:3000"
+
+backup: ## Create backup of data
+	@echo "💾 Creating backup..."
+	@./deploy.sh backup
+	@echo "✅ Backup completed"
+
+deploy: ## Deploy to production
+	@echo "🚀 Deploying to production..."
+	@./deploy.sh deploy
+	@echo "✅ Deployment completed"
+
+seed: ## Seed database with sample data
+	@echo "🌱 Seeding database..."
+	@./scripts/seed-data.sh
+	@echo "✅ Database seeded"
+
+clean: ## Clean up unused Docker resources
+	@echo "🧹 Cleaning up..."
+	@docker system prune -f
+	@docker volume prune -f
+	@echo "✅ Cleanup completed"
+
+build: ## Build all images
+	@echo "🔨 Building images..."
+	@docker-compose build --no-cache
+	@echo "✅ Build completed"
+
+dev: ## Start in development mode
+	@echo "🛠️ Starting in development mode..."
+	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+	@echo "✅ Development environment started"
+```
+
+## docker-compose.yml
+
+```
+# docker-compose.yml (fixed indentation – `env_file` is now at service level)
+
+x-health: &default-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s
+
+services:
+  # ───────────────────── MongoDB ─────────────────────
+  mongo:
+    image: mongo:7.0-jammy
+    container_name: n8bn-blog-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-n8bn_blog}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+      - ./backend/src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ping:1})' || exit 1"]
+      <<: *default-healthcheck
+      start_period: 40s
+
+  # ───────────────────── Backend API ─────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: n8bn-blog-backend
+    restart: unless-stopped
+    env_file:                       # <- env vars (JWT_SECRET, etc.) injected here
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongo:27017/${MONGO_DATABASE:-n8bn_blog}?authSource=admin
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      <<: *default-healthcheck
+      start_period: 40s
+
+  # ───────────────────── Frontend (static) ─────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: n8bn-blog-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      API_URL: http://backend:3000/api
+      NODE_ENV: ${NODE_ENV:-production}
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health.html"]
+      <<: *default-healthcheck
+
+  # ───────────── Mongo Express (optional profile) ─────────────
+  mongo-express:
+    image: mongo-express:latest
+    container_name: n8bn-blog-mongo-express
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - blog-network
+    profiles:
+      - admin
+
+# ──────────────────────── Volumes & Networks ───────────────────────
+volumes:
+  mongo_data:
+  mongo_config:
+  backend_uploads:
+
+networks:
+  blog-network:
+    driver: bridge
 ```
 
 ## dump_project_to_md.py
@@ -104,7 +918,80 @@ if __name__ == "__main__":
     main()
 ```
 
-## package-lock.json
+## LICENSE
+
+```
+MIT License
+
+Copyright (c) 2025 Mohammad Hamidi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## README.md
+
+```
+
+```
+
+## backend\Dockerfile
+
+```
+# Backend Dockerfile
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code
+COPY src/ ./src/
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodeuser -u 1001
+
+# Change ownership of uploads directory
+RUN chown -R nodeuser:nodejs /app/uploads
+
+# Switch to non-root user
+USER nodeuser
+
+# Expose port
+EXPOSE 3000
+
+# Health check - Fixed to handle errors properly
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
+# Start the application
+CMD ["node", "src/app.js"]
+```
+
+## backend\package-lock.json
 
 ```
 {
@@ -5688,7 +6575,7 @@ if __name__ == "__main__":
 }
 ```
 
-## package.json
+## backend\package.json
 
 ```
 {
@@ -5726,7 +6613,7 @@ if __name__ == "__main__":
 }
 ```
 
-## src\app.js
+## backend\src\app.js
 
 ```
 const express = require('express');
@@ -5816,6 +6703,8 @@ app.use((err, req, res, next) => {
       : err.message
   });
 });
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);            // new
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -5849,7 +6738,7 @@ app.listen(PORT, () => {
 });
 ```
 
-## src\init-mongo.js
+## backend\src\init-mongo.js
 
 ```
 
@@ -6205,7 +7094,7 @@ print("🏷️ Created tags:", db.tags.countDocuments());
 print("📝 Created posts:", db.posts.countDocuments());
 ```
 
-## src\config\database.js
+## backend\src\config\database.js
 
 ```
 const mongoose = require('mongoose');
@@ -6251,13 +7140,32 @@ const connectDB = async () => {
 module.exports = connectDB;
 ```
 
-## src\middleware\auth.js
+## backend\src\middleware\auth.js
 
 ```
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
+module.exports = async function (req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token, authorization denied' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+    if (!req.user) throw new Error('User not found');
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Token is not valid' });
+  }
+};
 ```
 
-## src\models\Category.js
+## backend\src\models\Category.js
 
 ```
 const mongoose = require('mongoose');
@@ -6387,7 +7295,7 @@ const Tag = mongoose.model('Tag', tagSchema);
 module.exports = { Category, Tag };
 ```
 
-## src\models\Post.js
+## backend\src\models\Post.js
 
 ```
 const mongoose = require('mongoose');
@@ -6402,7 +7310,7 @@ const postSchema = new mongoose.Schema({
   
   slug: {
     type: String,
-    required: true,
+   sparse: true,
     unique: true,
     trim: true,
     lowercase: true
@@ -6576,7 +7484,7 @@ postSchema.methods.incrementViews = function() {
 module.exports = mongoose.model('Post', postSchema);
 ```
 
-## src\models\Tag.js
+## backend\src\models\Tag.js
 
 ```
 // models/Tag.js
@@ -6638,7 +7546,94 @@ const Tag = mongoose.model('Tag', tagSchema);
 module.exports = { Category, Tag };
 ```
 
-## src\routes\categories.js
+## backend\src\models\User.js
+
+```
+const mongoose = require('mongoose');
+const bcrypt   = require('bcryptjs');
+
+const userSchema = new mongoose.Schema({
+  name:  { type: String, required: true, trim: true, maxlength: 50 },
+  email: { type: String, required: true, trim: true, unique: true, lowercase: true },
+  password: { type: String, required: true, minlength: 8 },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' }
+}, { timestamps: true });
+
+/* ─── Hash password before save ─── */
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);          // bcryptjs is already in package.json :contentReference[oaicite:0]{index=0}
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+/* ─── Helper to compare passwords at login ─── */
+userSchema.methods.matchPassword = function (plainPw) {
+  return bcrypt.compare(plainPw, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);
+```
+
+## backend\src\routes\auth.js
+
+```
+const express   = require('express');
+const jwt       = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
+const User      = require('../models/User');
+
+const router = express.Router();
+
+/* Helper to generate JWT */
+const signToken = id =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+
+/* ── POST /api/auth/register ── */
+router.post('/register', [
+  body('name').notEmpty(),
+  body('email').isEmail(),
+  body('password').isLength({ min: 8 })
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const { name, email, password } = req.body;
+  if (await User.exists({ email })) {
+    return res.status(400).json({ error: 'Email already registered' });
+  }
+
+  const user = await User.create({ name, email, password });
+  res.status(201).json({ token: signToken(user._id) });
+});
+
+/* ── POST /api/auth/login ── */
+router.post('/login', [
+  body('email').isEmail(),
+  body('password').notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user || !(await user.matchPassword(password))) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  res.json({ token: signToken(user._id) });
+});
+
+/* ── GET /api/auth/me ── */
+const protect = require('../middleware/auth');
+router.get('/me', protect, (req, res) => {
+  res.json(req.user);
+});
+
+module.exports = router;
+```
+
+## backend\src\routes\categories.js
 
 ```
 // routes/categories.js
@@ -6825,7 +7820,7 @@ router.delete('/:id', [
 module.exports = router;
 ```
 
-## src\routes\posts.js
+## backend\src\routes\posts.js
 
 ```
 const express = require('express');
@@ -7037,80 +8032,88 @@ router.get('/:slug', [
     });
   }
 });
-
+const auth = require('../middleware/auth');
 // POST /api/posts - Create new post
-router.post('/', upload.single('featuredImage'), validatePost, handleValidationErrors, async (req, res) => {
-  try {
-    const postData = {
-      title: req.body.title,
-      excerpt: req.body.excerpt,
-      content: req.body.content,
-      author: {
-        name: req.body['author.name'],
-        email: req.body['author.email']
-      },
-      status: req.body.status || 'draft'
-    };
-
-    // Handle featured image
-    if (req.file) {
-      postData.featuredImage = {
-        url: `/uploads/${req.file.filename}`,
-        filename: req.file.filename,
-        alt: req.body.imageAlt || postData.title
+router.post(
+  '/',
+  auth,
+  upload.single('featuredImage'),
+  async (req, res) => {
+    try {
+      /* ────── Build the post payload ────── */
+      const postData = {
+        title:   req.body.title,
+        excerpt: req.body.excerpt,
+        content: req.body.content,
+        author: {
+          id:    req.user._id,   // added for convenience if you want to reference later
+          name:  req.user.name,
+          email: req.user.email
+        },
+        status: req.body.status || 'draft'
       };
-    }
 
-    // Handle categories
-    if (req.body.categories) {
-      const categoryIds = Array.isArray(req.body.categories) 
-        ? req.body.categories 
-        : req.body.categories.split(',');
-      postData.categories = categoryIds;
-    }
+      /* ────── Featured image (multipart/form-data) ────── */
+      if (req.file) {
+        postData.featuredImage = {
+          url:      `/uploads/${req.file.filename}`,
+          filename: req.file.filename,
+          alt:      req.body.imageAlt || postData.title
+        };
+      }
 
-    // Handle tags
-    if (req.body.tags) {
-      const tagIds = Array.isArray(req.body.tags) 
-        ? req.body.tags 
-        : req.body.tags.split(',');
-      postData.tags = tagIds;
-    }
+      /* ────── Categories ────── */
+      if (req.body.categories) {
+        const categoryIds = Array.isArray(req.body.categories)
+          ? req.body.categories
+          : req.body.categories.split(',');
+        postData.categories = categoryIds;
+      }
 
-    // Handle SEO data
-    if (req.body.seo) {
-      postData.seo = JSON.parse(req.body.seo);
-    }
+      /* ────── Tags ────── */
+      if (req.body.tags) {
+        const tagIds = Array.isArray(req.body.tags)
+          ? req.body.tags
+          : req.body.tags.split(',');
+        postData.tags = tagIds;
+      }
 
-    const post = new Post(postData);
-    await post.save();
+      /* ────── SEO (expects a JSON string) ────── */
+      if (req.body.seo) {
+        postData.seo = JSON.parse(req.body.seo);
+      }
 
-    const populatedPost = await Post.findById(post._id)
-      .populate('categories', 'name slug color')
-      .populate('tags', 'name slug color');
+      /* ────── Save & populate ────── */
+      const post = new Post(postData);
+      await post.save();
 
-    res.status(201).json({
-      success: true,
-      message: 'پست با موفقیت ایجاد شد',
-      data: populatedPost
-    });
+      const populatedPost = await Post.findById(post._id)
+        .populate('categories', 'name slug color')
+        .populate('tags', 'name slug color');
 
-  } catch (error) {
-    console.error('Error creating post:', error);
-    
-    if (error.code === 11000) {
-      return res.status(400).json({
-        error: 'پست تکراری',
-        message: 'پستی با این عنوان قبلاً ایجاد شده است'
+      return res.status(201).json({
+        success: true,
+        message: 'پست با موفقیت ایجاد شد',
+        data: populatedPost
+      });
+    } catch (error) {
+      console.error('Error creating post:', error);
+
+      if (error.code === 11000) {
+        return res.status(400).json({
+          error: 'پست تکراری',
+          message: 'پستی با این عنوان قبلاً ایجاد شده است'
+        });
+      }
+
+      return res.status(500).json({
+        error: 'خطا در ایجاد پست',
+        message: error.message
       });
     }
-    
-    res.status(500).json({
-      error: 'خطا در ایجاد پست',
-      message: error.message
-    });
   }
-});
+);
+
 
 // PUT /api/posts/:id - Update post
 router.put('/:id', [
@@ -7245,7 +8248,7 @@ router.get('/stats/summary', async (req, res) => {
 module.exports = router;
 ```
 
-## src\routes\tags.js
+## backend\src\routes\tags.js
 
 ```
 // routes/tags.js
@@ -7422,5 +8425,5279 @@ router.delete('/:id', [
 });
 
 module.exports = router;
+```
+
+## frontend\Dockerfile
+
+```
+# Stage 1 ─ build static folder
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# Install minimal deps (http-server will be installed in the final image)
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+
+# Prepare /app/public exactly like your dev script
+RUN mkdir -p public \
+ && cp -r pages/* public/ 2>/dev/null || true \
+ && cp -r js public/ 2>/dev/null || true \
+ && cp -r css public/ 2>/dev/null || true \
+ && cp -r assets public/ 2>/dev/null || true \
+ && echo '<!DOCTYPE html><html><head><title>Health</title></head><body>OK</body></html>' > public/health.html
+
+# Stage 2 ─ lightweight runtime
+FROM node:18-alpine
+WORKDIR /app
+RUN npm install -g http-server
+
+# Copy only the static files
+COPY --from=builder /app/public ./public
+
+EXPOSE 8080
+CMD ["http-server", "public", "-p", "8080", "-c-1"]
+```
+
+## frontend\package-lock.json
+
+```
+{
+  "name": "n8bn-blog-frontend",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "n8bn-blog-frontend",
+      "version": "1.0.0",
+      "dependencies": {
+        "http-server": "^14.1.1"
+      },
+      "devDependencies": {
+        "clean-css-cli": "^5.6.2",
+        "uglify-js": "^3.17.4"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      }
+    },
+    "node_modules/ansi-styles": {
+      "version": "4.3.0",
+      "resolved": "https://registry.npmmirror.com/ansi-styles/-/ansi-styles-4.3.0.tgz",
+      "integrity": "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==",
+      "license": "MIT",
+      "dependencies": {
+        "color-convert": "^2.0.1"
+      },
+      "engines": {
+        "node": ">=8"
+      },
+      "funding": {
+        "url": "https://github.com/chalk/ansi-styles?sponsor=1"
+      }
+    },
+    "node_modules/anymatch": {
+      "version": "3.1.3",
+      "resolved": "https://registry.npmmirror.com/anymatch/-/anymatch-3.1.3.tgz",
+      "integrity": "sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "normalize-path": "^3.0.0",
+        "picomatch": "^2.0.4"
+      },
+      "engines": {
+        "node": ">= 8"
+      }
+    },
+    "node_modules/async": {
+      "version": "3.2.6",
+      "resolved": "https://registry.npmmirror.com/async/-/async-3.2.6.tgz",
+      "integrity": "sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==",
+      "license": "MIT"
+    },
+    "node_modules/balanced-match": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmmirror.com/balanced-match/-/balanced-match-1.0.2.tgz",
+      "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/basic-auth": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmmirror.com/basic-auth/-/basic-auth-2.0.1.tgz",
+      "integrity": "sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==",
+      "license": "MIT",
+      "dependencies": {
+        "safe-buffer": "5.1.2"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/binary-extensions": {
+      "version": "2.3.0",
+      "resolved": "https://registry.npmmirror.com/binary-extensions/-/binary-extensions-2.3.0.tgz",
+      "integrity": "sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=8"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/sindresorhus"
+      }
+    },
+    "node_modules/brace-expansion": {
+      "version": "1.1.11",
+      "resolved": "https://registry.npmmirror.com/brace-expansion/-/brace-expansion-1.1.11.tgz",
+      "integrity": "sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "balanced-match": "^1.0.0",
+        "concat-map": "0.0.1"
+      }
+    },
+    "node_modules/braces": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmmirror.com/braces/-/braces-3.0.3.tgz",
+      "integrity": "sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "fill-range": "^7.1.1"
+      },
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/call-bind-apply-helpers": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmmirror.com/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz",
+      "integrity": "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/call-bound": {
+      "version": "1.0.4",
+      "resolved": "https://registry.npmmirror.com/call-bound/-/call-bound-1.0.4.tgz",
+      "integrity": "sha512-+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "get-intrinsic": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/chalk": {
+      "version": "4.1.2",
+      "resolved": "https://registry.npmmirror.com/chalk/-/chalk-4.1.2.tgz",
+      "integrity": "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==",
+      "license": "MIT",
+      "dependencies": {
+        "ansi-styles": "^4.1.0",
+        "supports-color": "^7.1.0"
+      },
+      "engines": {
+        "node": ">=10"
+      },
+      "funding": {
+        "url": "https://github.com/chalk/chalk?sponsor=1"
+      }
+    },
+    "node_modules/chokidar": {
+      "version": "3.6.0",
+      "resolved": "https://registry.npmmirror.com/chokidar/-/chokidar-3.6.0.tgz",
+      "integrity": "sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "anymatch": "~3.1.2",
+        "braces": "~3.0.2",
+        "glob-parent": "~5.1.2",
+        "is-binary-path": "~2.1.0",
+        "is-glob": "~4.0.1",
+        "normalize-path": "~3.0.0",
+        "readdirp": "~3.6.0"
+      },
+      "engines": {
+        "node": ">= 8.10.0"
+      },
+      "funding": {
+        "url": "https://paulmillr.com/funding/"
+      },
+      "optionalDependencies": {
+        "fsevents": "~2.3.2"
+      }
+    },
+    "node_modules/clean-css": {
+      "version": "5.3.3",
+      "resolved": "https://registry.npmmirror.com/clean-css/-/clean-css-5.3.3.tgz",
+      "integrity": "sha512-D5J+kHaVb/wKSFcyyV75uCn8fiY4sV38XJoe4CUyGQ+mOU/fMVYUdH1hJC+CJQ5uY3EnW27SbJYS4X8BiLrAFg==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "source-map": "~0.6.0"
+      },
+      "engines": {
+        "node": ">= 10.0"
+      }
+    },
+    "node_modules/clean-css-cli": {
+      "version": "5.6.3",
+      "resolved": "https://registry.npmmirror.com/clean-css-cli/-/clean-css-cli-5.6.3.tgz",
+      "integrity": "sha512-MUAta8pEqA/d2DKQwtZU5nm0Og8TCyAglOx3GlWwjhGdKBwY4kVF6E5M6LU/jmmuswv+HbYqG/dKKkq5p1dD0A==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "chokidar": "^3.5.2",
+        "clean-css": "^5.3.3",
+        "commander": "7.x",
+        "glob": "^7.1.6"
+      },
+      "bin": {
+        "cleancss": "bin/cleancss"
+      },
+      "engines": {
+        "node": ">= 10.12.0"
+      }
+    },
+    "node_modules/color-convert": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmmirror.com/color-convert/-/color-convert-2.0.1.tgz",
+      "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==",
+      "license": "MIT",
+      "dependencies": {
+        "color-name": "~1.1.4"
+      },
+      "engines": {
+        "node": ">=7.0.0"
+      }
+    },
+    "node_modules/color-name": {
+      "version": "1.1.4",
+      "resolved": "https://registry.npmmirror.com/color-name/-/color-name-1.1.4.tgz",
+      "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==",
+      "license": "MIT"
+    },
+    "node_modules/commander": {
+      "version": "7.2.0",
+      "resolved": "https://registry.npmmirror.com/commander/-/commander-7.2.0.tgz",
+      "integrity": "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">= 10"
+      }
+    },
+    "node_modules/concat-map": {
+      "version": "0.0.1",
+      "resolved": "https://registry.npmmirror.com/concat-map/-/concat-map-0.0.1.tgz",
+      "integrity": "sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/corser": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmmirror.com/corser/-/corser-2.0.1.tgz",
+      "integrity": "sha512-utCYNzRSQIZNPIcGZdQc92UVJYAhtGAteCFg0yRaFm8f0P+CPtyGyHXJcGXnffjCybUCEx3FQ2G7U3/o9eIkVQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4.0"
+      }
+    },
+    "node_modules/debug": {
+      "version": "4.4.1",
+      "resolved": "https://registry.npmmirror.com/debug/-/debug-4.4.1.tgz",
+      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
+      "license": "MIT",
+      "dependencies": {
+        "ms": "^2.1.3"
+      },
+      "engines": {
+        "node": ">=6.0"
+      },
+      "peerDependenciesMeta": {
+        "supports-color": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/dunder-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmmirror.com/dunder-proto/-/dunder-proto-1.0.1.tgz",
+      "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "gopd": "^1.2.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-define-property": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmmirror.com/es-define-property/-/es-define-property-1.0.1.tgz",
+      "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-errors": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmmirror.com/es-errors/-/es-errors-1.3.0.tgz",
+      "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-object-atoms": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmmirror.com/es-object-atoms/-/es-object-atoms-1.1.1.tgz",
+      "integrity": "sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/eventemitter3": {
+      "version": "4.0.7",
+      "resolved": "https://registry.npmmirror.com/eventemitter3/-/eventemitter3-4.0.7.tgz",
+      "integrity": "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==",
+      "license": "MIT"
+    },
+    "node_modules/fill-range": {
+      "version": "7.1.1",
+      "resolved": "https://registry.npmmirror.com/fill-range/-/fill-range-7.1.1.tgz",
+      "integrity": "sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "to-regex-range": "^5.0.1"
+      },
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/follow-redirects": {
+      "version": "1.15.9",
+      "resolved": "https://registry.npmmirror.com/follow-redirects/-/follow-redirects-1.15.9.tgz",
+      "integrity": "sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==",
+      "funding": [
+        {
+          "type": "individual",
+          "url": "https://github.com/sponsors/RubenVerborgh"
+        }
+      ],
+      "license": "MIT",
+      "engines": {
+        "node": ">=4.0"
+      },
+      "peerDependenciesMeta": {
+        "debug": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/fs.realpath": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmmirror.com/fs.realpath/-/fs.realpath-1.0.0.tgz",
+      "integrity": "sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==",
+      "dev": true,
+      "license": "ISC"
+    },
+    "node_modules/fsevents": {
+      "version": "2.3.3",
+      "resolved": "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.3.tgz",
+      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
+      "dev": true,
+      "hasInstallScript": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "darwin"
+      ],
+      "engines": {
+        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+      }
+    },
+    "node_modules/function-bind": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmmirror.com/function-bind/-/function-bind-1.1.2.tgz",
+      "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-intrinsic": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmmirror.com/get-intrinsic/-/get-intrinsic-1.3.0.tgz",
+      "integrity": "sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "es-define-property": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "es-object-atoms": "^1.1.1",
+        "function-bind": "^1.1.2",
+        "get-proto": "^1.0.1",
+        "gopd": "^1.2.0",
+        "has-symbols": "^1.1.0",
+        "hasown": "^2.0.2",
+        "math-intrinsics": "^1.1.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmmirror.com/get-proto/-/get-proto-1.0.1.tgz",
+      "integrity": "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==",
+      "license": "MIT",
+      "dependencies": {
+        "dunder-proto": "^1.0.1",
+        "es-object-atoms": "^1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/glob": {
+      "version": "7.2.3",
+      "resolved": "https://registry.npmmirror.com/glob/-/glob-7.2.3.tgz",
+      "integrity": "sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==",
+      "deprecated": "Glob versions prior to v9 are no longer supported",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "fs.realpath": "^1.0.0",
+        "inflight": "^1.0.4",
+        "inherits": "2",
+        "minimatch": "^3.1.1",
+        "once": "^1.3.0",
+        "path-is-absolute": "^1.0.0"
+      },
+      "engines": {
+        "node": "*"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/isaacs"
+      }
+    },
+    "node_modules/glob-parent": {
+      "version": "5.1.2",
+      "resolved": "https://registry.npmmirror.com/glob-parent/-/glob-parent-5.1.2.tgz",
+      "integrity": "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "is-glob": "^4.0.1"
+      },
+      "engines": {
+        "node": ">= 6"
+      }
+    },
+    "node_modules/gopd": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmmirror.com/gopd/-/gopd-1.2.0.tgz",
+      "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/has-flag": {
+      "version": "4.0.0",
+      "resolved": "https://registry.npmmirror.com/has-flag/-/has-flag-4.0.0.tgz",
+      "integrity": "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/has-symbols": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmmirror.com/has-symbols/-/has-symbols-1.1.0.tgz",
+      "integrity": "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/hasown": {
+      "version": "2.0.2",
+      "resolved": "https://registry.npmmirror.com/hasown/-/hasown-2.0.2.tgz",
+      "integrity": "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==",
+      "license": "MIT",
+      "dependencies": {
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/he": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmmirror.com/he/-/he-1.2.0.tgz",
+      "integrity": "sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==",
+      "license": "MIT",
+      "bin": {
+        "he": "bin/he"
+      }
+    },
+    "node_modules/html-encoding-sniffer": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmmirror.com/html-encoding-sniffer/-/html-encoding-sniffer-3.0.0.tgz",
+      "integrity": "sha512-oWv4T4yJ52iKrufjnyZPkrN0CH3QnrUqdB6In1g5Fe1mia8GmF36gnfNySxoZtxD5+NmYw1EElVXiBk93UeskA==",
+      "license": "MIT",
+      "dependencies": {
+        "whatwg-encoding": "^2.0.0"
+      },
+      "engines": {
+        "node": ">=12"
+      }
+    },
+    "node_modules/http-proxy": {
+      "version": "1.18.1",
+      "resolved": "https://registry.npmmirror.com/http-proxy/-/http-proxy-1.18.1.tgz",
+      "integrity": "sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==",
+      "license": "MIT",
+      "dependencies": {
+        "eventemitter3": "^4.0.0",
+        "follow-redirects": "^1.0.0",
+        "requires-port": "^1.0.0"
+      },
+      "engines": {
+        "node": ">=8.0.0"
+      }
+    },
+    "node_modules/http-server": {
+      "version": "14.1.1",
+      "resolved": "https://registry.npmmirror.com/http-server/-/http-server-14.1.1.tgz",
+      "integrity": "sha512-+cbxadF40UXd9T01zUHgA+rlo2Bg1Srer4+B4NwIHdaGxAGGv59nYRnGGDJ9LBk7alpS0US+J+bLLdQOOkJq4A==",
+      "license": "MIT",
+      "dependencies": {
+        "basic-auth": "^2.0.1",
+        "chalk": "^4.1.2",
+        "corser": "^2.0.1",
+        "he": "^1.2.0",
+        "html-encoding-sniffer": "^3.0.0",
+        "http-proxy": "^1.18.1",
+        "mime": "^1.6.0",
+        "minimist": "^1.2.6",
+        "opener": "^1.5.1",
+        "portfinder": "^1.0.28",
+        "secure-compare": "3.0.1",
+        "union": "~0.5.0",
+        "url-join": "^4.0.1"
+      },
+      "bin": {
+        "http-server": "bin/http-server"
+      },
+      "engines": {
+        "node": ">=12"
+      }
+    },
+    "node_modules/iconv-lite": {
+      "version": "0.6.3",
+      "resolved": "https://registry.npmmirror.com/iconv-lite/-/iconv-lite-0.6.3.tgz",
+      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
+      "license": "MIT",
+      "dependencies": {
+        "safer-buffer": ">= 2.1.2 < 3.0.0"
+      },
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/inflight": {
+      "version": "1.0.6",
+      "resolved": "https://registry.npmmirror.com/inflight/-/inflight-1.0.6.tgz",
+      "integrity": "sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==",
+      "deprecated": "This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "once": "^1.3.0",
+        "wrappy": "1"
+      }
+    },
+    "node_modules/inherits": {
+      "version": "2.0.4",
+      "resolved": "https://registry.npmmirror.com/inherits/-/inherits-2.0.4.tgz",
+      "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
+      "dev": true,
+      "license": "ISC"
+    },
+    "node_modules/is-binary-path": {
+      "version": "2.1.0",
+      "resolved": "https://registry.npmmirror.com/is-binary-path/-/is-binary-path-2.1.0.tgz",
+      "integrity": "sha512-ZMERYes6pDydyuGidse7OsHxtbI7WVeUEozgR/g7rd0xUimYNlvZRE/K2MgZTjWy725IfelLeVcEM97mmtRGXw==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "binary-extensions": "^2.0.0"
+      },
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/is-extglob": {
+      "version": "2.1.1",
+      "resolved": "https://registry.npmmirror.com/is-extglob/-/is-extglob-2.1.1.tgz",
+      "integrity": "sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/is-glob": {
+      "version": "4.0.3",
+      "resolved": "https://registry.npmmirror.com/is-glob/-/is-glob-4.0.3.tgz",
+      "integrity": "sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "is-extglob": "^2.1.1"
+      },
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/is-number": {
+      "version": "7.0.0",
+      "resolved": "https://registry.npmmirror.com/is-number/-/is-number-7.0.0.tgz",
+      "integrity": "sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.12.0"
+      }
+    },
+    "node_modules/math-intrinsics": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmmirror.com/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+      "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/mime": {
+      "version": "1.6.0",
+      "resolved": "https://registry.npmmirror.com/mime/-/mime-1.6.0.tgz",
+      "integrity": "sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==",
+      "license": "MIT",
+      "bin": {
+        "mime": "cli.js"
+      },
+      "engines": {
+        "node": ">=4"
+      }
+    },
+    "node_modules/minimatch": {
+      "version": "3.1.2",
+      "resolved": "https://registry.npmmirror.com/minimatch/-/minimatch-3.1.2.tgz",
+      "integrity": "sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "brace-expansion": "^1.1.7"
+      },
+      "engines": {
+        "node": "*"
+      }
+    },
+    "node_modules/minimist": {
+      "version": "1.2.8",
+      "resolved": "https://registry.npmmirror.com/minimist/-/minimist-1.2.8.tgz",
+      "integrity": "sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
+    "node_modules/normalize-path": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmmirror.com/normalize-path/-/normalize-path-3.0.0.tgz",
+      "integrity": "sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/object-inspect": {
+      "version": "1.13.4",
+      "resolved": "https://registry.npmmirror.com/object-inspect/-/object-inspect-1.13.4.tgz",
+      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/once": {
+      "version": "1.4.0",
+      "resolved": "https://registry.npmmirror.com/once/-/once-1.4.0.tgz",
+      "integrity": "sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==",
+      "dev": true,
+      "license": "ISC",
+      "dependencies": {
+        "wrappy": "1"
+      }
+    },
+    "node_modules/opener": {
+      "version": "1.5.2",
+      "resolved": "https://registry.npmmirror.com/opener/-/opener-1.5.2.tgz",
+      "integrity": "sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==",
+      "license": "(WTFPL OR MIT)",
+      "bin": {
+        "opener": "bin/opener-bin.js"
+      }
+    },
+    "node_modules/path-is-absolute": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmmirror.com/path-is-absolute/-/path-is-absolute-1.0.1.tgz",
+      "integrity": "sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/picomatch": {
+      "version": "2.3.1",
+      "resolved": "https://registry.npmmirror.com/picomatch/-/picomatch-2.3.1.tgz",
+      "integrity": "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==",
+      "dev": true,
+      "license": "MIT",
+      "engines": {
+        "node": ">=8.6"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/jonschlinkert"
+      }
+    },
+    "node_modules/portfinder": {
+      "version": "1.0.37",
+      "resolved": "https://registry.npmmirror.com/portfinder/-/portfinder-1.0.37.tgz",
+      "integrity": "sha512-yuGIEjDAYnnOex9ddMnKZEMFE0CcGo6zbfzDklkmT1m5z734ss6JMzN9rNB3+RR7iS+F10D4/BVIaXOyh8PQKw==",
+      "license": "MIT",
+      "dependencies": {
+        "async": "^3.2.6",
+        "debug": "^4.3.6"
+      },
+      "engines": {
+        "node": ">= 10.12"
+      }
+    },
+    "node_modules/qs": {
+      "version": "6.14.0",
+      "resolved": "https://registry.npmmirror.com/qs/-/qs-6.14.0.tgz",
+      "integrity": "sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "side-channel": "^1.1.0"
+      },
+      "engines": {
+        "node": ">=0.6"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/readdirp": {
+      "version": "3.6.0",
+      "resolved": "https://registry.npmmirror.com/readdirp/-/readdirp-3.6.0.tgz",
+      "integrity": "sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "picomatch": "^2.2.1"
+      },
+      "engines": {
+        "node": ">=8.10.0"
+      }
+    },
+    "node_modules/requires-port": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmmirror.com/requires-port/-/requires-port-1.0.0.tgz",
+      "integrity": "sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==",
+      "license": "MIT"
+    },
+    "node_modules/safe-buffer": {
+      "version": "5.1.2",
+      "resolved": "https://registry.npmmirror.com/safe-buffer/-/safe-buffer-5.1.2.tgz",
+      "integrity": "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==",
+      "license": "MIT"
+    },
+    "node_modules/safer-buffer": {
+      "version": "2.1.2",
+      "resolved": "https://registry.npmmirror.com/safer-buffer/-/safer-buffer-2.1.2.tgz",
+      "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==",
+      "license": "MIT"
+    },
+    "node_modules/secure-compare": {
+      "version": "3.0.1",
+      "resolved": "https://registry.npmmirror.com/secure-compare/-/secure-compare-3.0.1.tgz",
+      "integrity": "sha512-AckIIV90rPDcBcglUwXPF3kg0P0qmPsPXAj6BBEENQE1p5yA1xfmDJzfi1Tappj37Pv2mVbKpL3Z1T+Nn7k1Qw==",
+      "license": "MIT"
+    },
+    "node_modules/side-channel": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmmirror.com/side-channel/-/side-channel-1.1.0.tgz",
+      "integrity": "sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.3",
+        "side-channel-list": "^1.0.0",
+        "side-channel-map": "^1.0.1",
+        "side-channel-weakmap": "^1.0.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-list": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmmirror.com/side-channel-list/-/side-channel-list-1.0.0.tgz",
+      "integrity": "sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.3"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-map": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmmirror.com/side-channel-map/-/side-channel-map-1.0.1.tgz",
+      "integrity": "sha512-VCjCNfgMsby3tTdo02nbjtM/ewra6jPHmpThenkTYh8pG9ucZ/1P8So4u4FGBek/BjpOVsDCMoLA/iuBKIFXRA==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-weakmap": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmmirror.com/side-channel-weakmap/-/side-channel-weakmap-1.0.2.tgz",
+      "integrity": "sha512-WPS/HvHQTYnHisLo9McqBHOJk2FkHO/tlpvldyrnem4aeQp4hai3gythswg6p01oSoTl58rcpiFAjF2br2Ak2A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3",
+        "side-channel-map": "^1.0.1"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/source-map": {
+      "version": "0.6.1",
+      "resolved": "https://registry.npmmirror.com/source-map/-/source-map-0.6.1.tgz",
+      "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==",
+      "dev": true,
+      "license": "BSD-3-Clause",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/supports-color": {
+      "version": "7.2.0",
+      "resolved": "https://registry.npmmirror.com/supports-color/-/supports-color-7.2.0.tgz",
+      "integrity": "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==",
+      "license": "MIT",
+      "dependencies": {
+        "has-flag": "^4.0.0"
+      },
+      "engines": {
+        "node": ">=8"
+      }
+    },
+    "node_modules/to-regex-range": {
+      "version": "5.0.1",
+      "resolved": "https://registry.npmmirror.com/to-regex-range/-/to-regex-range-5.0.1.tgz",
+      "integrity": "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "is-number": "^7.0.0"
+      },
+      "engines": {
+        "node": ">=8.0"
+      }
+    },
+    "node_modules/uglify-js": {
+      "version": "3.19.3",
+      "resolved": "https://registry.npmmirror.com/uglify-js/-/uglify-js-3.19.3.tgz",
+      "integrity": "sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==",
+      "dev": true,
+      "license": "BSD-2-Clause",
+      "bin": {
+        "uglifyjs": "bin/uglifyjs"
+      },
+      "engines": {
+        "node": ">=0.8.0"
+      }
+    },
+    "node_modules/union": {
+      "version": "0.5.0",
+      "resolved": "https://registry.npmmirror.com/union/-/union-0.5.0.tgz",
+      "integrity": "sha512-N6uOhuW6zO95P3Mel2I2zMsbsanvvtgn6jVqJv4vbVcz/JN0OkL9suomjQGmWtxJQXOCqUJvquc1sMeNz/IwlA==",
+      "dependencies": {
+        "qs": "^6.4.0"
+      },
+      "engines": {
+        "node": ">= 0.8.0"
+      }
+    },
+    "node_modules/url-join": {
+      "version": "4.0.1",
+      "resolved": "https://registry.npmmirror.com/url-join/-/url-join-4.0.1.tgz",
+      "integrity": "sha512-jk1+QP6ZJqyOiuEI9AEWQfju/nB2Pw466kbA0LEZljHwKeMgd9WrAEgEGxjPDD2+TNbbb37rTyhEfrCXfuKXnA==",
+      "license": "MIT"
+    },
+    "node_modules/whatwg-encoding": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmmirror.com/whatwg-encoding/-/whatwg-encoding-2.0.0.tgz",
+      "integrity": "sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==",
+      "license": "MIT",
+      "dependencies": {
+        "iconv-lite": "0.6.3"
+      },
+      "engines": {
+        "node": ">=12"
+      }
+    },
+    "node_modules/wrappy": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmmirror.com/wrappy/-/wrappy-1.0.2.tgz",
+      "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==",
+      "dev": true,
+      "license": "ISC"
+    }
+  }
+}
+```
+
+## frontend\package.json
+
+```
+
+{
+  "name": "n8bn-blog-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for N8BN Blog",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server public -p 8080 -c-1",
+    "build": "npm run copy-files && npm run optimize",
+    "copy-files": "cp -r pages/* public/ && cp -r js public/ && cp -r css public/ && cp -r assets public/",
+    "optimize": "echo 'Frontend optimization complete'",
+    "dev": "http-server public -p 8080 -c-1 -o"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.2",
+    "uglify-js": "^3.17.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+```
+
+## frontend\pages\admin.html
+
+```
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت - N98N</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8f9fa;
+            min-height: calc(100vh - 200px);
+        }
+
+        .admin-header {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-nav button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #e9ecef;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .admin-nav button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+        }
+
+        .admin-nav button:hover:not(.active) {
+            background: #dee2e6;
+        }
+
+        .admin-content {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c2c54;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .content-editor {
+            min-height: 300px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: #ffffff;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: #ffffff;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: #ffffff;
+        }
+
+        .posts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .posts-table th,
+        .posts-table td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .posts-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c2c54;
+        }
+
+        .posts-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-archived {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .image-upload {
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .image-upload.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            min-height: 45px;
+        }
+
+        .tag-item {
+            background: #667eea;
+            color: #ffffff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+
+            .admin-nav {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .posts-table {
+                font-size: 0.8rem;
+            }
+
+            .posts-table th,
+            .posts-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+   <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="https://n98n.ir" class="logo">
+                <img src="logo.svg" alt="N98N Logo" class="logo-svg">
+            </a>
+            <ul class="nav-menu">
+                <!-- <li><a href="#support">پشتیبانی</a></li>
+                <li><a href="#about">درباره ما</a></li>
+                <li><a href="#pricing">قیمت گذاری</a></li>
+                <li><a href="#services">خدمات</a></li>
+                <li><a href="#docs">مستندات</a></li> -->
+                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                <!-- <li><a href="admin.html" class="auth-btn">پنل مدیریت</a></li> -->
+            </ul>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Admin Container -->
+    <div class="admin-container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <h1>پنل مدیریت بلاگ</h1>
+            <p>مدیریت مقالات، دسته‌بندی‌ها و برچسب‌های بلاگ N98N</p>
+        </div>
+
+        <!-- Admin Navigation -->
+        <div class="admin-nav">
+            <button class="admin-nav-btn active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i> داشبورد
+            </button>
+            <button class="admin-nav-btn" data-section="posts">
+                <i class="fas fa-file-alt"></i> مقالات
+            </button>
+            <button class="admin-nav-btn" data-section="categories">
+                <i class="fas fa-folder"></i> دسته‌بندی‌ها
+            </button>
+            <button class="admin-nav-btn" data-section="tags">
+                <i class="fas fa-tags"></i> برچسب‌ها
+            </button>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="admin-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="admin-section active">
+                <h2>آمار کلی</h2>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-posts">-</h3>
+                        <p>کل مقالات</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="published-posts">-</h3>
+                        <p>مقالات منتشر شده</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="draft-posts">-</h3>
+                        <p>پیش‌نویس‌ها</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="total-views">-</h3>
+                        <p>کل بازدیدها</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Section -->
+            <div id="posts" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت مقالات</h2>
+                    <button class="btn btn-primary" id="add-post-btn">
+                        <i class="fas fa-plus"></i> افزودن مقاله جدید
+                    </button>
+                </div>
+
+                <div id="posts-table-container">
+                    <table class="posts-table" id="posts-table">
+                        <thead>
+                            <tr>
+                                <th>عنوان</th>
+                                <th>نویسنده</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ انتشار</th>
+                                <th>بازدید</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posts-table-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem;">
+                                    <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                    <p>در حال بارگذاری...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div id="categories" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت دسته‌بندی‌ها</h2>
+                    <button class="btn btn-primary" id="add-category-btn">
+                        <i class="fas fa-plus"></i> افزودن دسته‌بندی جدید
+                    </button>
+                </div>
+
+                <div id="categories-list" class="stats-grid">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            <div id="tags" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت برچسب‌ها</h2>
+                    <button class="btn btn-primary" id="add-tag-btn">
+                        <i class="fas fa-plus"></i> افزودن برچسب جدید
+                    </button>
+                </div>
+
+                <div id="tags-list" class="tags-cloud">
+                    <!-- Tags will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Modal -->
+    <div id="post-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="post-modal-title">افزودن مقاله جدید</h3>
+                <button class="modal-close" id="post-modal-close">&times;</button>
+            </div>
+            <form id="post-form">
+                <input type="hidden" id="post-id">
+                
+                <div class="form-group">
+                    <label for="post-title">عنوان مقاله *</label>
+                    <input type="text" id="post-title" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-excerpt">خلاصه مقاله *</label>
+                    <textarea id="post-excerpt" class="form-control" required placeholder="خلاصه‌ای از محتوای مقاله..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-content">محتوای مقاله *</label>
+                    <textarea id="post-content" class="form-control content-editor" required placeholder="محتوای کامل مقاله..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="author-name">نام نویسنده *</label>
+                        <input type="text" id="author-name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="author-email">ایمیل نویسنده</label>
+                        <input type="email" id="author-email" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-status">وضعیت انتشار</label>
+                    <select id="post-status" class="form-control">
+                        <option value="draft">پیش‌نویس</option>
+                        <option value="published">منتشر شده</option>
+                        <option value="archived">آرشیو شده</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>تصویر شاخص</label>
+                    <div class="image-upload" id="image-upload">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #6c757d; margin-bottom: 0.5rem;"></i>
+                        <p>تصویر را اینجا بکشید یا کلیک کنید</p>
+                        <input type="file" id="featured-image" accept="image/*" style="display: none;">
+                    </div>
+                    <img id="image-preview" class="image-preview" style="display: none;">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره مقاله
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-post">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="category-modal-title">افزودن دسته‌بندی جدید</h3>
+                <button class="modal-close" id="category-modal-close">&times;</button>
+            </div>
+            <form id="category-form">
+                <input type="hidden" id="category-id">
+                
+                <div class="form-group">
+                    <label for="category-name">نام دسته‌بندی *</label>
+                    <input type="text" id="category-name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category-description">توضیحات</label>
+                    <textarea id="category-description" class="form-control" placeholder="توضیحات دسته‌بندی..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="category-color">رنگ</label>
+                        <input type="color" id="category-color" class="form-control" value="#667eea">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-icon">آیکون</label>
+                        <input type="text" id="category-icon" class="form-control" placeholder="fas fa-folder">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره دسته‌بندی
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-category">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tag Modal -->
+    <div id="tag-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tag-modal-title">افزودن برچسب جدید</h3>
+                <button class="modal-close" id="tag-modal-close">&times;</button>
+            </div>
+            <form id="tag-form">
+                <input type="hidden" id="tag-id">
+                
+                <div class="form-group">
+                    <label for="tag-name">نام برچسب *</label>
+                    <input type="text" id="tag-name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tag-color">رنگ</label>
+                    <input type="color" id="tag-color" class="form-control" value="#6c757d">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره برچسب
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-tag">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="logo-icon">⬢</div>
+                <div class="logo-text">N98N</div>
+            </div>
+            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
+```
+
+## frontend\pages\index.html
+
+```
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بلاگ - N98N</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Updated logo styles for SVG */
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo-svg {
+            height: 40px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover .logo-svg {
+            transform: scale(1.05);
+        }
+
+        .footer-logo .logo-svg {
+            height: 35px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Remove old logo styles */
+        .logo-icon, .logo-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="https://n98n.ir" class="logo">
+  <img src="logo.svg" alt="N98N Logo" class="logo-img">
+</a>
+            <ul class="nav-menu">
+                <!-- <li><a href="#support">پشتیبانی</a></li>
+                <li><a href="#about">درباره ما</a></li>
+                <li><a href="#pricing">قیمت گذاری</a></li>
+                <li><a href="#services">خدمات</a></li>
+                <li><a href="#docs">مستندات</a></li> -->
+                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                <!-- <li><a href="admin.html" class="auth-btn">پنل مدیریت</a></li> -->
+            </ul>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>بلاگ تخصصی <span class="highlight">هوشمند</span> برای توسعه‌دهندگان ایرانی</h1>
+            <p>راهکارهای تخصصی اتوماسیون فرآیندهای کسب و کار با استفاده از پلتفرم N98N طراحی شده برای نیازهای خاص بازار ایران. با ما همراه شوید تا در مسیر تحول دیجیتال سازمان خود را به سطح بالاتری از کارایی و بهره‌وری برسانید.</p>
+            <a href="#posts" class="cta-button">مطالعه مقالات</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            <!-- Blog Posts -->
+            <section class="blog-posts" id="posts">
+                <h2 class="section-title">آخرین مقالات</h2>
+                
+                <!-- Posts will be loaded here dynamically -->
+                <div id="posts-container">
+                    <!-- Loading placeholder -->
+                    <div class="posts-loading">
+                        <div class="loading-spinner" style="margin: 2rem auto;"></div>
+                        <p style="text-align: center; color: #6c757d;">در حال بارگذاری مقالات...</p>
+                    </div>
+                </div>
+
+                <!-- No posts message -->
+                <div id="no-posts" style="display: none;">
+                    <div class="no-posts-message">
+                        <i class="fas fa-file-alt" style="font-size: 3rem; color: #6c757d; margin-bottom: 1rem;"></i>
+                        <h3>هیچ مقاله‌ای یافت نشد</h3>
+                        <p>در حال حاضر مقاله‌ای برای نمایش وجود ندارد.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Search Widget -->
+                <div class="sidebar-widget">
+                    <h4>جستجو در مقالات</h4>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="جستجو کنید..." id="search-input">
+                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+
+                <!-- Categories Widget -->
+                <div class="sidebar-widget">
+                    <h4>دسته‌بندی‌ها</h4>
+                    <ul class="category-list" id="categories-list">
+                        <li class="loading-item">در حال بارگذاری...</li>
+                    </ul>
+                </div>
+
+                <!-- Recent Posts Widget -->
+                <div class="sidebar-widget">
+                    <h4>مقالات پربازدید</h4>
+                    <ul class="recent-posts" id="featured-posts">
+                        <li class="loading-item">در حال بارگذاری...</li>
+                    </ul>
+                </div>
+
+                <!-- Tags Widget -->
+                <div class="sidebar-widget">
+                    <h4>برچسب‌های محبوب</h4>
+                    <div class="tags-cloud" id="tags-cloud">
+                        <span class="loading-item">در حال بارگذاری...</span>
+                    </div>
+                </div>
+
+                <!-- Clear Filters Button -->
+                <div class="sidebar-widget">
+                    <button class="cta-button" id="clear-filters" style="width: 100%; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        نمایش همه مقالات
+                    </button>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination-container" style="display: none;">
+            <!-- Pagination will be generated dynamically -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="logo.svg" alt="N98N Logo" class="logo-svg">
+            </div>
+            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/blog.js"></script>
+</body>
+</html>
+```
+
+## frontend\pages\login.html
+
+```
+
+```
+
+## frontend\pages\post.html
+
+```
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">مقاله - N98N</title>
+    <meta name="description" id="page-description" content="">
+    <meta name="keywords" id="page-keywords" content="">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+ <style>
+    body {
+      background: #0a0e1a;
+      color: #f5f5f5;
+      font-family: 'Yekan', sans-serif;
+      line-height: 1.7;
+    }
+    .post-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 3rem;
+    }
+    .post-content {
+      background: #1c2135;
+      color: #e4e6eb;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    .post-header {
+      padding: 2rem;
+      border-bottom: 1px solid #2e344e;
+    }
+    .post-title {
+      color: #ffffff;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .post-meta {
+      display: flex;
+      gap: 1rem;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .post-meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .post-featured-image {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .post-body {
+      padding: 2rem;
+    }
+    .post-body h2,
+    .post-body h3,
+    .post-body h4 {
+      color: #ffffff;
+      margin: 2rem 0 1rem;
+      font-weight: 600;
+    }
+    .post-body p {
+      color: #d1d5db;
+      margin-bottom: 1.5rem;
+    }
+    .post-body code {
+      background: #2e344e;
+      color: #fcd34d;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .post-body pre {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 1.5rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    .post-tags {
+      padding: 1.5rem 2rem;
+      border-top: 1px solid #2e344e;
+    }
+    .post-tags h4 {
+      margin-bottom: 1rem;
+      color: #f5f5f5;
+    }
+    .post-tag {
+      background: #2e344e;
+      color: #e5e7eb;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      text-decoration: none;
+      transition: background 0.3s ease;
+    }
+    .post-tag:hover {
+      background: #6366f1;
+      color: white;
+    }
+    .related-posts {
+      background: #1f2937;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .related-posts h4 {
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+    }
+    .related-post-item {
+      display: block;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #374151;
+      color: #d1d5db;
+      text-decoration: none;
+    }
+    .related-post-item:last-child {
+      border-bottom: none;
+    }
+    .related-post-item:hover {
+      color: #6366f1;
+    }
+    .back-to-blog {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #8b5cf6;
+      text-decoration: none;
+      margin-bottom: 2rem;
+      font-weight: 500;
+    }
+    .back-to-blog:hover {
+      color: #a78bfa;
+    }
+    .sidebar-widget {
+      background: #1f2937;
+      border-radius: 16px;
+      padding: 1.5rem;
+      color: #d1d5db;
+      margin-bottom: 1.5rem;
+    }
+    .sidebar-widget h4 {
+      margin-bottom: 1rem;
+      color: #ffffff;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.85rem;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .post-loading,
+    .post-error {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #9ca3af;
+    }
+    .post-error {
+      color: #ef4444;
+    }
+    .logo-img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .post-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1rem;
+      }
+      .post-title {
+        font-size: 1.8rem;
+      }
+      .post-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+           <a href="https://n98n.ir" class="logo">
+  <img src="logo.svg" alt="N98N Logo" class="logo-img">
+</a>
+            <ul class="nav-menu">
+             
+                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                         </ul>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="post-container">
+            <!-- Post Content -->
+            <main>
+                <a href="index.html" class="back-to-blog">
+                    <i class="fas fa-arrow-right"></i>
+                    بازگشت به فهرست مقالات
+                </a>
+
+                <!-- Loading State -->
+                <div id="post-loading" class="post-loading">
+                    <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                    <p>در حال بارگذاری مقاله...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="post-error" class="post-error" style="display: none;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>خطا در بارگذاری مقاله</h3>
+                    <p id="error-message">مقاله مورد نظر یافت نشد یا در دسترس نیست.</p>
+                    <a href="index.html" class="cta-button" style="margin-top: 1rem;">
+                        بازگشت به صفحه اصلی
+                    </a>
+                </div>
+
+                <!-- Post Content -->
+                <article id="post-content" class="post-content" style="display: none;">
+                    <div class="post-header">
+                        <h1 id="post-title" class="post-title"></h1>
+                        <div id="post-meta" class="post-meta"></div>
+                        <div id="post-featured-image-container"></div>
+                    </div>
+                    <div id="post-body" class="post-body"></div>
+                    <div id="post-tags" class="post-tags" style="display: none;">
+                        <h4>برچسب‌ها</h4>
+                        <div id="post-tags-list" class="tags-list"></div>
+                    </div>
+                </article>
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Related Posts -->
+                <div id="related-posts" class="related-posts" style="display: none;">
+                    <h4>مقالات مرتبط</h4>
+                    <div id="related-posts-list"></div>
+                </div>
+
+                <!-- Share Widget -->
+                <div class="sidebar-widget">
+                    <h4>اشتراک‌گذاری</h4>
+                    <div class="share-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="#" id="share-telegram" class="tag" style="background: #0088cc; color: white;">
+                            <i class="fab fa-telegram-plane"></i> تلگرام
+                        </a>
+                        <a href="#" id="share-twitter" class="tag" style="background: #1da1f2; color: white;">
+                            <i class="fab fa-twitter"></i> توییتر
+                        </a>
+                        <a href="#" id="share-linkedin" class="tag" style="background: #0077b5; color: white;">
+                            <i class="fab fa-linkedin"></i> لینکدین
+                        </a>
+                        <button id="copy-link" class="tag" style="background: #6c757d; color: white; border: none; cursor: pointer;">
+                            <i class="fas fa-link"></i> کپی لینک
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table of Contents -->
+                <div id="table-of-contents" class="sidebar-widget" style="display: none;">
+                    <h4>فهرست مطالب</h4>
+                    <div id="toc-list"></div>
+                </div>
+
+                <!-- Reading Progress -->
+                <div class="sidebar-widget">
+                    <h4>پیشرفت مطالعه</h4>
+                    <div style="background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="reading-progress" style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
+                        <span id="reading-percentage">0</span>% مطالعه شده
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="logo-icon">⬢</div>
+                <div class="logo-text">N98N</div>
+            </div>
+            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script>
+        class PostDetail {
+            constructor() {
+                this.postSlug = this.getSlugFromURL();
+                this.post = null;
+                this.init();
+            }
+
+            getSlugFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('slug');
+            }
+
+            async init() {
+                if (!this.postSlug) {
+                    this.showError('شناسه مقاله در آدرس وجود ندارد');
+                    return;
+                }
+
+                try {
+                    await this.loadPost();
+                    this.setupEventListeners();
+                    this.setupReadingProgress();
+                } catch (error) {
+                    console.error('Error initializing post detail:', error);
+                    this.showError('خطا در بارگذاری مقاله');
+                }
+            }
+
+            async loadPost() {
+                try {
+                    loadingManager.show('post-detail');
+                    
+                    const response = await blogAPI.getPost(this.postSlug);
+                    
+                    if (response.success) {
+                        this.post = response.data.post;
+                        this.renderPost();
+                        this.renderRelatedPosts(response.data.relatedPosts);
+                        this.updateSEO();
+                        this.generateTableOfContents();
+                    } else {
+                        throw new Error('Post not found');
+                    }
+
+                } catch (error) {
+                    console.error('Error loading post:', error);
+                    this.showError(error.message);
+                } finally {
+                    loadingManager.hide('post-detail');
+                }
+            }
+
+            renderPost() {
+                const loadingDiv = document.getElementById('post-loading');
+                const contentDiv = document.getElementById('post-content');
+                
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+
+                // Title
+                document.getElementById('post-title').textContent = this.post.title;
+
+                // Meta information
+                const metaHTML = `
+                    <span><i class="fas fa-calendar-alt"></i> ${blogAPI.formatPersianDate(this.post.publishedAt)}</span>
+                    <span><i class="fas fa-user"></i> ${this.post.author.name}</span>
+                    <span><i class="fas fa-eye"></i> ${this.post.views || 0} بازدید</span>
+                    ${this.post.readingTime ? `<span><i class="fas fa-clock"></i> ${this.post.readingTime} دقیقه</span>` : ''}
+                    ${this.post.categories?.length ? `<span><i class="fas fa-folder"></i> ${this.post.categories.map(cat => cat.name).join(', ')}</span>` : ''}
+                `;
+                document.getElementById('post-meta').innerHTML = metaHTML;
+
+                // Featured image
+                const imageContainer = document.getElementById('post-featured-image-container');
+                if (this.post.featuredImage?.url) {
+                    imageContainer.innerHTML = `
+                        <img src="${this.post.featuredImage.url}" 
+                             alt="${this.post.featuredImage.alt || this.post.title}" 
+                             class="post-featured-image">
+                    `;
+                }
+
+                // Content
+                document.getElementById('post-body').innerHTML = this.post.content;
+
+                // Tags
+                if (this.post.tags?.length) {
+                    const tagsContainer = document.getElementById('post-tags');
+                    const tagsListContainer = document.getElementById('post-tags-list');
+                    
+                    tagsListContainer.innerHTML = this.post.tags.map(tag => 
+                        `<a href="index.html?tag=${tag._id}" class="post-tag">${tag.name}</a>`
+                    ).join('');
+                    
+                    tagsContainer.style.display = 'block';
+                }
+
+                // Setup share buttons
+                this.setupShareButtons();
+            }
+
+            renderRelatedPosts(relatedPosts) {
+                if (!relatedPosts || relatedPosts.length === 0) return;
+
+                const container = document.getElementById('related-posts');
+                const listContainer = document.getElementById('related-posts-list');
+                
+                listContainer.innerHTML = relatedPosts.map(post => `
+                    <a href="post.html?slug=${post.slug}" class="related-post-item">
+                        <div class="related-post-title">${blogAPI.truncateText(post.title, 60)}</div>
+                        <div class="related-post-meta">
+                            ${blogAPI.formatPersianDate(post.publishedAt)} • ${post.views || 0} بازدید
+                        </div>
+                    </a>
+                `).join('');
+
+                container.style.display = 'block';
+            }
+
+            updateSEO() {
+                document.title = `${this.post.title} - N98N`;
+                
+                if (this.post.seo?.metaDescription || this.post.excerpt) {
+                    document.getElementById('page-description').content = 
+                        this.post.seo?.metaDescription || this.post.excerpt;
+                }
+                
+                if (this.post.seo?.keywords?.length) {
+                    document.getElementById('page-keywords').content = 
+                        this.post.seo.keywords.join(', ');
+                }
+            }
+
+            generateTableOfContents() {
+                const headings = document.querySelectorAll('#post-body h2, #post-body h3');
+                
+                if (headings.length < 2) return;
+
+                const tocContainer = document.getElementById('table-of-contents');
+                const tocList = document.getElementById('toc-list');
+                
+                let tocHTML = '<ul style="list-style: none; padding: 0;">';
+                
+                headings.forEach((heading, index) => {
+                    const id = `heading-${index}`;
+                    heading.id = id;
+                    
+                    const level = heading.tagName === 'H2' ? 0 : 1;
+                    const indent = level * 15;
+                    
+                    tocHTML += `
+                        <li style="margin-left: ${indent}px; margin-bottom: 0.5rem;">
+                            <a href="#${id}" style="color: #495057; text-decoration: none; font-size: 0.9rem;">
+                                ${heading.textContent}
+                            </a>
+                        </li>
+                    `;
+                });
+                
+                tocHTML += '</ul>';
+                tocList.innerHTML = tocHTML;
+                tocContainer.style.display = 'block';
+
+                // Smooth scroll for TOC links
+                tocList.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = e.target.getAttribute('href').substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                });
+            }
+
+            setupShareButtons() {
+                const currentURL = window.location.href;
+                const title = this.post.title;
+                
+                // Telegram
+                document.getElementById('share-telegram').href = 
+                    `https://t.me/share/url?url=${encodeURIComponent(currentURL)}&text=${encodeURIComponent(title)}`;
+                
+                // Twitter
+                document.getElementById('share-twitter').href = 
+                    `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentURL)}&text=${encodeURIComponent(title)}`;
+                
+                // LinkedIn
+                document.getElementById('share-linkedin').href = 
+                    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentURL)}`;
+                
+                // Copy link
+                document.getElementById('copy-link').addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(currentURL);
+                        ErrorHandler.success('لینک کپی شد');
+                    } catch (error) {
+                        ErrorHandler.error('خطا در کپی کردن لینک');
+                    }
+                });
+            }
+
+            setupReadingProgress() {
+                const postBody = document.getElementById('post-body');
+                const progressBar = document.getElementById('reading-progress');
+                const progressText = document.getElementById('reading-percentage');
+                
+                if (!postBody || !progressBar) return;
+
+                const updateProgress = () => {
+                    const rect = postBody.getBoundingClientRect();
+                    const windowHeight = window.innerHeight;
+                    const totalHeight = rect.height;
+                    const currentProgress = Math.max(0, -rect.top);
+                    const percentage = Math.min(100, Math.max(0, (currentProgress / (totalHeight - windowHeight)) * 100));
+                    
+                    progressBar.style.width = `${percentage}%`;
+                    progressText.textContent = Math.round(percentage);
+                };
+
+                window.addEventListener('scroll', updateProgress);
+                updateProgress();
+            }
+
+            setupEventListeners() {
+                // Mobile menu
+                const mobileBtn = document.querySelector('.mobile-menu-btn');
+                const navMenu = document.querySelector('.nav-menu');
+                
+                if (mobileBtn && navMenu) {
+                    mobileBtn.addEventListener('click', () => {
+                        navMenu.classList.toggle('active');
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!navMenu.contains(e.target) && !mobileBtn.contains(e.target)) {
+                            navMenu.classList.remove('active');
+                        }
+                    });
+                }
+
+                // Header scroll effect
+                window.addEventListener('scroll', () => {
+                    const header = document.querySelector('.header');
+                    if (window.scrollY > 50) {
+                        header.style.background = 'rgba(44, 44, 84, 0.95)';
+                        header.style.backdropFilter = 'blur(10px)';
+                    } else {
+                        header.style.background = '#2c2c54';
+                        header.style.backdropFilter = 'none';
+                    }
+                });
+            }
+
+            showError(message) {
+                const loadingDiv = document.getElementById('post-loading');
+                const errorDiv = document.getElementById('post-error');
+                const messageDiv = document.getElementById('error-message');
+                
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                messageDiv.textContent = message;
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new PostDetail();
+        });
+    </script>
+</body>
+</html>
+```
+
+## frontend\public\logo.svg
+
+```
+<svg width="532" height="278" viewBox="0 0 532 278" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_d_353_18)">
+<g clip-path="url(#clip0_353_18)">
+<path d="M93.9069 37.6357L25.7899 77.2531C15.7337 83.1019 9.54688 93.8572 9.54688 105.491V145.351V185.211C9.54688 196.845 15.7338 207.6 25.7899 213.449L59.9535 233.319L93.9069 253.066C104.059 258.971 116.601 258.971 126.753 253.066L194.87 213.449C204.926 207.6 211.113 196.845 211.113 185.211V105.491C211.113 93.8572 204.926 83.1019 194.87 77.2531L126.753 37.6357C116.601 31.7308 104.059 31.7308 93.9069 37.6357Z" fill="black" stroke="white" stroke-width="10.8675"/>
+<path d="M93.9069 37.6357L25.7899 77.2531C15.7337 83.1019 9.54688 93.8572 9.54688 105.491V145.351V185.211C9.54688 196.845 15.7338 207.6 25.7899 213.449L59.9535 233.319L93.9069 253.066C104.059 258.971 116.601 258.971 126.753 253.066L194.87 213.449C204.926 207.6 211.113 196.845 211.113 185.211V105.491C211.113 93.8572 204.926 83.1019 194.87 77.2531L126.753 37.6357C116.601 31.7308 104.059 31.7308 93.9069 37.6357Z" stroke="white" stroke-width="10.8675"/>
+<path d="M176.696 152.591C176.222 150.66 174.273 149.479 172.342 149.952L140.875 157.673C138.944 158.146 137.763 160.096 138.237 162.027C138.71 163.958 140.66 165.139 142.591 164.665L170.561 157.803L177.424 185.774C177.897 187.705 179.847 188.886 181.778 188.412C183.709 187.939 184.89 185.989 184.416 184.058L176.696 152.591ZM110.35 82.799L112.24 85.8629L117.338 82.718L112.169 79.6922L110.35 82.799ZM57.1 115.649L55.21 112.585L53.5 113.64V115.649H57.1ZM57.1 171.449H53.5V172.433L54.0007 173.281L57.1 171.449ZM108.46 79.7351L55.21 112.585L58.99 118.713L112.24 85.8629L108.46 79.7351ZM113.156 259.48L176.279 155.315L170.121 151.583L106.998 255.748L113.156 259.48ZM65.4814 60.7058L108.531 85.9058L112.169 79.6922L69.1186 54.4922L65.4814 60.7058ZM53.5 115.649V171.449H60.7V115.649H53.5ZM54.0007 173.281L104.918 259.434L111.117 255.771L60.1993 169.617L54.0007 173.281ZM106.998 255.748C107.939 254.196 110.194 254.209 111.117 255.771L104.918 259.434C106.765 262.558 111.275 262.582 113.156 259.48L106.998 255.748Z" fill="white"/>
+<path d="M97.6636 82.0686C97.5449 87.0491 103.064 91.2205 109.99 91.3856C116.916 91.5506 122.627 87.647 122.746 82.6665C122.865 77.6859 117.346 73.5146 110.42 73.3495C103.493 73.1844 97.7823 77.0881 97.6636 82.0686Z" fill="white"/>
+<path d="M49.9709 163.686C54.067 160.85 60.5845 163.169 64.5283 168.866C68.472 174.562 68.3486 181.479 64.2525 184.314C60.1564 187.15 53.6389 184.831 49.6952 179.135C45.7514 173.439 45.8749 166.522 49.9709 163.686Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M110.368 137.644L21.3707 85.8828L16.6719 93.9618L105.695 145.738V255.899H115.041V145.738L204.064 93.9618L199.365 85.8828L110.368 137.644Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M60.7031 51.1499V45.1244C60.7031 43.136 62.315 41.5244 64.3031 41.5244C66.2915 41.5244 67.9031 43.136 67.9031 45.1244V51.1499H60.7031ZM64.3031 37.7366C62.315 37.7366 60.7031 36.125 60.7034 34.1366V22.0857C60.7034 20.0975 62.315 18.4857 64.3034 18.4857C66.2915 18.4857 67.9034 20.0975 67.9034 22.0858V34.1366C67.9031 36.125 66.2915 37.7366 64.3031 37.7366ZM64.3034 14.6981C62.315 14.6981 60.7034 13.0863 60.7034 11.0981V5.07265C60.7034 3.08443 62.315 1.47265 64.3034 1.47266C66.2915 1.47267 67.9034 3.08443 67.9034 5.07268V11.0982C67.9034 13.0864 66.2915 14.6981 64.3034 14.6981Z" fill="white"/>
+</g>
+<g clip-path="url(#clip1_353_18)">
+<path d="M528 122V200H509.066L480.826 152.754V200H462V122H480.934L509.174 169.58V122H528Z" fill="white"/>
+<path d="M402.2 158.16C399.094 156.63 396.58 154.555 394.658 151.933C392.81 149.238 391.885 145.924 391.885 141.992C391.885 138.35 392.884 135.036 394.88 132.05C396.876 128.992 399.944 126.552 404.085 124.731C408.226 122.91 413.512 122 419.945 122C426.303 122 431.552 122.947 435.693 124.84C439.907 126.661 443.013 129.101 445.009 132.16C447.079 135.146 448.115 138.423 448.115 141.992C448.115 145.852 447.116 149.129 445.12 151.824C443.198 154.518 440.758 156.63 437.8 158.16C441.645 159.908 444.64 162.347 446.784 165.479C448.928 168.611 450 172.325 450 176.622C450 181.647 448.632 185.907 445.897 189.403C443.235 192.899 439.612 195.558 435.028 197.378C430.517 199.126 425.49 200 419.945 200C414.399 200 409.372 199.126 404.861 197.378C400.351 195.558 396.728 192.899 393.992 189.403C391.331 185.907 390 181.647 390 176.622C390 172.325 391.035 168.611 393.106 165.479C395.249 162.347 398.281 159.908 402.2 158.16ZM428.817 144.832C428.817 142.064 428.003 140.062 426.377 138.824C424.75 137.513 422.606 136.857 419.945 136.857C417.283 136.857 415.139 137.513 413.512 138.824C411.959 140.062 411.183 142.064 411.183 144.832C411.183 147.527 411.997 149.639 413.623 151.168C415.25 152.625 417.357 153.353 419.945 153.353C422.533 153.353 424.64 152.625 426.266 151.168C427.967 149.639 428.817 147.527 428.817 144.832ZM419.945 166.025C417.8 166.025 415.952 166.426 414.399 167.227C412.847 167.955 411.664 169.048 410.85 170.504C410.037 171.888 409.63 173.599 409.63 175.639C409.63 178.406 410.444 180.7 412.07 182.521C413.771 184.269 416.396 185.143 419.945 185.143C423.494 185.143 426.118 184.233 427.819 182.412C429.52 180.591 430.37 178.333 430.37 175.639C430.37 173.599 429.963 171.888 429.15 170.504C428.336 169.048 427.153 167.955 425.601 167.227C424.048 166.426 422.162 166.025 419.945 166.025Z" fill="white"/>
+<path d="M353.889 122C359.666 122 364.815 123.177 369.334 125.53C373.852 127.884 377.407 131.12 380 135.239C382.667 139.358 384 144.139 384 149.581C384 153.48 383.185 157.488 381.556 161.607C380 165.726 377.519 170.065 374.111 174.625L357.643 196.618C356.05 198.747 353.546 200 350.886 200C343.889 200 339.929 191.976 344.186 186.422L356.444 170.433L359.933 166.341C363.347 162.338 367.902 165.029 364 168.557C359.852 172.308 354.852 174.184 349 174.184C344.482 174.184 340.333 173.228 336.556 171.315C332.778 169.33 329.741 166.461 327.445 162.71C325.148 158.959 324 154.436 324 149.14C324 143.624 325.37 138.843 328.111 134.798C330.852 130.679 334.481 127.516 339 125.31C343.519 123.103 348.481 122 353.889 122ZM364.444 149.03C364.444 146.823 364 144.948 363.111 143.403C362.296 141.785 361.074 140.535 359.444 139.652C357.889 138.769 356.037 138.328 353.889 138.328C351.741 138.328 349.889 138.769 348.334 139.652C346.778 140.535 345.593 141.785 344.778 143.403C343.963 144.948 343.556 146.823 343.556 149.03C343.556 151.163 343.963 153.038 344.778 154.656C345.593 156.201 346.778 157.414 348.334 158.297C349.889 159.18 351.741 159.621 353.889 159.621C356.037 159.621 357.889 159.18 359.444 158.297C361.074 157.414 362.296 156.201 363.111 154.656C364 153.038 364.444 151.163 364.444 149.03Z" fill="#DA7C70"/>
+<path d="M353.895 122.391C359.615 122.391 364.711 123.556 369.185 125.886C373.658 128.216 377.178 131.42 379.745 135.497C382.385 139.575 383.705 144.308 383.705 149.696C383.705 153.555 382.898 157.524 381.285 161.601C379.745 165.679 377.288 169.975 373.914 174.49L357.612 196.263C356.033 198.37 353.555 199.611 350.922 199.611C343.994 199.611 340.074 191.667 344.289 186.169L356.424 170.339L359.879 166.288C363.258 162.325 367.767 164.989 363.905 168.482C359.798 172.196 354.848 174.053 349.055 174.053C344.581 174.053 340.475 173.106 336.735 171.213C332.994 169.247 329.988 166.407 327.714 162.694C325.441 158.98 324.305 154.502 324.305 149.259C324.305 143.798 325.661 139.065 328.374 135.06C331.088 130.983 334.681 127.852 339.155 125.667C343.628 123.483 348.541 122.391 353.895 122.391ZM364.344 149.15C364.344 146.966 363.905 145.109 363.024 143.58C362.218 141.978 361.008 140.74 359.394 139.866C357.855 138.992 356.021 138.556 353.895 138.556C351.768 138.556 349.935 138.992 348.395 139.866C346.854 140.74 345.681 141.978 344.874 143.58C344.068 145.109 343.665 146.966 343.665 149.15C343.665 151.262 344.068 153.118 344.874 154.72C345.681 156.249 346.854 157.451 348.395 158.325C349.935 159.198 351.768 159.635 353.895 159.635C356.021 159.635 357.855 159.198 359.394 158.325C361.008 157.451 362.218 156.249 363.024 154.72C363.905 153.118 364.344 151.262 364.344 149.15Z" fill="#FF6E5A"/>
+<path d="M312 122V200H293.066L264.826 152.754V200H246V122H264.934L293.174 169.58V122H312Z" fill="white"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_353_18" x="0" y="0" width="532" height="277.1" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_353_18"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_353_18" result="shape"/>
+</filter>
+<clipPath id="clip0_353_18">
+<rect width="212.7" height="269.1" fill="white" transform="translate(4)"/>
+</clipPath>
+<clipPath id="clip1_353_18">
+<rect width="282" height="78" fill="white" transform="translate(246 122)"/>
+</clipPath>
+</defs>
+</svg>
+```
+
+## frontend\public\css\style.css
+
+```
+/* Modern N8BN Blog CSS - Inspired by Reference Design */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0a0e1a;
+    color: #ffffff;
+    line-height: 1.6;
+    min-height: 100vh;
+    direction: rtl;
+    font-weight: 400;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+}
+
+h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+h3 {
+    font-size: 1.875rem;
+    font-weight: 600;
+}
+
+p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header Styles */
+.header {
+    background: rgba(10, 14, 26, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 1.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.header.scrolled {
+    background: rgba(10, 14, 26, 0.98);
+    padding: 1rem 0;
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+}
+
+.logo-text {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.025em;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 2.5rem;
+    align-items: center;
+}
+
+.nav-menu li {
+    position: relative;
+}
+
+.nav-menu a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.75rem 0;
+    position: relative;
+}
+
+.nav-menu a:hover {
+    color: #6366f1;
+}
+
+.nav-menu a.active {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.nav-menu a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 1px;
+}
+
+.auth-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, #0a0e1a 0%, #1e1b4b 50%, #312e81 100%);
+    text-align: center;
+    padding: 10rem 2rem 6rem;
+    position: relative;
+    overflow: hidden;
+    margin-top: 80px;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(40px);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.hero h1 {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.hero h1 .highlight {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero p {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-button {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    padding: 1.25rem 2.5rem;
+    border-radius: 16px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+    border: none;
+    cursor: pointer;
+}
+
+.cta-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.6);
+}
+
+/* Main Container */
+.main-container {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    min-height: 100vh;
+    padding: 4rem 0;
+}
+
+.content-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 4rem;
+}
+
+/* Blog Posts Section */
+.blog-posts {
+    display: grid;
+    gap: 2.5rem;
+}
+
+.section-title {
+    color: #20003a;
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    font-weight: 700;
+    position: relative;
+    letter-spacing: -0.025em;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -0.75rem;
+    right: 0;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 2px;
+}
+
+#posts-container {
+    display: grid;
+    gap: 2.5rem;
+}
+
+.blog-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.blog-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.blog-card.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.blog-card-image {
+    height: 280px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    position: relative;
+    overflow: hidden;
+}
+
+.blog-card-image::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.blog-card:hover .blog-card-image::before {
+    transform: translateX(100%);
+}
+
+.blog-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.blog-card:hover .blog-card-image img {
+    transform: scale(1.1);
+}
+
+.blog-card-content {
+    padding: 2rem;
+    color: #ffffff;
+}
+
+.blog-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    font-weight: 700;
+    line-height: 1.3;
+    transition: color 0.3s ease;
+}
+
+.blog-card:hover h3 {
+    color: #8b5cf6;
+}
+
+.blog-meta {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.blog-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.blog-meta i {
+    opacity: 0.8;
+}
+
+.blog-excerpt {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+}
+
+.read-more {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.read-more:hover {
+    color: #8b5cf6;
+    transform: translateX(-5px);
+}
+
+.read-more i {
+    transition: transform 0.3s ease;
+}
+
+.read-more:hover i {
+    transform: translateX(-3px);
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.sidebar-widget {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.sidebar-widget:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+}
+
+.sidebar-widget h4 {
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+    position: relative;
+}
+
+.sidebar-widget h4::after {
+    content: '';
+    position: absolute;
+    bottom: -0.75rem;
+    right: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 2px;
+}
+
+/* Search Box */
+.search-box {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.search-btn {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.search-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+/* Categories and Lists */
+.category-list,
+.recent-posts {
+    list-style: none;
+}
+
+.category-list li,
+.recent-posts li {
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.category-list li:last-child,
+.recent-posts li:last-child {
+    border-bottom: none;
+}
+
+.category-list li:hover,
+.recent-posts li:hover {
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0 -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 12px;
+}
+
+.category-list a,
+.recent-posts a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.category-list a:hover,
+.recent-posts a:hover {
+    color: #6366f1;
+}
+
+.category-list a.active,
+.category-list a.active:hover {
+    color: #8b5cf6;
+    font-weight: 600;
+}
+
+.category-count {
+    background: rgba(99, 102, 241, 0.2);
+    color: #6366f1;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Tags Cloud */
+.tags-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.tag {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+}
+
+.tag:hover {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    border-color: transparent;
+}
+
+.tag.active {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    border-color: transparent;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 4rem;
+    align-items: center;
+}
+
+.pagination a,
+.pagination span {
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    min-width: 48px;
+    text-align: center;
+}
+
+.pagination a:hover {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+.pagination .current {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    border-color: transparent;
+}
+
+/* Footer */
+.footer {
+    background: #0a0e1a;
+    padding: 4rem 0 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 6rem;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.footer p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Loading States */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 14, 26, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #6366f1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.posts-loading,
+.loading-item {
+    text-align: center;
+    padding: 3rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.no-posts-message {
+    text-align: center;
+    padding: 6rem 2rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.no-posts-message i {
+    display: block;
+    margin-bottom: 1.5rem;
+    font-size: 3rem;
+    color: rgba(99, 102, 241, 0.6);
+}
+
+.no-posts-message h3 {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1rem;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(34, 197, 94, 0.95);
+    backdrop-filter: blur(20px);
+    color: white;
+    padding: 1.25rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    max-width: 400px;
+    animation: slideInRight 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification-error {
+    background: rgba(239, 68, 68, 0.95);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.3s ease;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .content-wrapper {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+
+    .hero h1 {
+        font-size: 3rem;
+    }
+
+    .nav-menu {
+        gap: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(10, 14, 26, 0.98);
+        backdrop-filter: blur(20px);
+        flex-direction: column;
+        padding: 2rem 0;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-menu.active {
+        display: flex;
+    }
+
+    .nav-menu li {
+        padding: 0.75rem 2rem;
+        width: 100%;
+    }
+
+    .nav-menu a {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 0;
+        font-size: 1.1rem;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .hero {
+        padding: 8rem 1rem 4rem;
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .content-wrapper {
+        padding: 0 1rem;
+    }
+
+    .blog-card-image {
+        height: 200px;
+        font-size: 2.5rem;
+    }
+
+    .blog-card-content {
+        padding: 1.5rem;
+    }
+
+    .sidebar-widget {
+        padding: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0 1rem;
+    }
+
+    .hero {
+        padding: 6rem 1rem 3rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .cta-button {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+
+    .blog-card-content {
+        padding: 1.25rem;
+    }
+
+    .blog-card h3 {
+        font-size: 1.25rem;
+    }
+
+    .tags-cloud .tag {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .header,
+    .sidebar,
+    .footer,
+    .pagination,
+    .loading-overlay,
+    .notification {
+        display: none;
+    }
+
+    .main-container {
+        background: white;
+        padding: 0;
+    }
+
+    .content-wrapper {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .blog-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+        margin-bottom: 1rem;
+        background: white;
+        color: black;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .blog-card {
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .search-input:focus {
+        border-color: #ffffff;
+    }
+
+    .cta-button {
+        border: 2px solid #fff;
+    }
+}
+.logo-img {
+    height: 48px; /* You can change this to 40px or 56px if needed */
+    width: auto;
+    display: block;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .loading-spinner {
+        animation: none;
+        border: 4px solid #6366f1;
+    }
+}
+```
+
+## frontend\public\js\admin.js
+
+```
+// Admin Panel Logic
+class AdminPanel {
+  constructor() {
+    this.currentSection = 'dashboard';
+    this.currentPost = null;
+    this.currentCategory = null;
+    this.currentTag = null;
+    this.init();
+  }
+
+  async init() {
+    try {
+      this.setupEventListeners();
+      await this.loadDashboard();
+      console.log('✅ Admin panel initialized successfully!');
+    } catch (error) {
+      console.error('❌ Error initializing admin panel:', error);
+      ErrorHandler.error('خطا در بارگذاری پنل مدیریت');
+    }
+  }
+
+  setupEventListeners() {
+    // Navigation
+    document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const section = e.target.dataset.section;
+        this.switchSection(section);
+      });
+    });
+
+    // Post Management
+    document.getElementById('add-post-btn').addEventListener('click', () => {
+      this.openPostModal();
+    });
+
+    document.getElementById('post-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.savePost();
+    });
+
+    document.getElementById('cancel-post').addEventListener('click', () => {
+      this.closePostModal();
+    });
+
+    document.getElementById('post-modal-close').addEventListener('click', () => {
+      this.closePostModal();
+    });
+
+    // Category Management
+    document.getElementById('add-category-btn').addEventListener('click', () => {
+      this.openCategoryModal();
+    });
+
+    document.getElementById('category-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.saveCategory();
+    });
+
+    document.getElementById('cancel-category').addEventListener('click', () => {
+      this.closeCategoryModal();
+    });
+
+    document.getElementById('category-modal-close').addEventListener('click', () => {
+      this.closeCategoryModal();
+    });
+
+    // Tag Management
+    document.getElementById('add-tag-btn').addEventListener('click', () => {
+      this.openTagModal();
+    });
+
+    document.getElementById('tag-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.saveTag();
+    });
+
+    document.getElementById('cancel-tag').addEventListener('click', () => {
+      this.closeTagModal();
+    });
+
+    document.getElementById('tag-modal-close').addEventListener('click', () => {
+      this.closeTagModal();
+    });
+
+    // Image Upload
+    this.setupImageUpload();
+
+    // Modal Backdrop Close
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('active');
+        }
+      });
+    });
+  }
+
+  setupImageUpload() {
+    const uploadArea = document.getElementById('image-upload');
+    const fileInput = document.getElementById('featured-image');
+    const imagePreview = document.getElementById('image-preview');
+
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].type.startsWith('image/')) {
+        fileInput.files = files;
+        this.previewImage(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        this.previewImage(e.target.files[0]);
+      }
+    });
+  }
+
+  previewImage(file) {
+    const reader = new FileReader();
+    const imagePreview = document.getElementById('image-preview');
+    
+    reader.onload = (e) => {
+      imagePreview.src = e.target.result;
+      imagePreview.style.display = 'block';
+    };
+    
+    reader.readAsDataURL(file);
+  }
+
+  async switchSection(section) {
+    // Update navigation
+    document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`[data-section="${section}"]`).classList.add('active');
+
+    // Update content
+    document.querySelectorAll('.admin-section').forEach(sec => {
+      sec.classList.remove('active');
+    });
+    document.getElementById(section).classList.add('active');
+
+    this.currentSection = section;
+
+    // Load section data
+    try {
+      switch (section) {
+        case 'dashboard':
+          await this.loadDashboard();
+          break;
+        case 'posts':
+          await this.loadPosts();
+          break;
+        case 'categories':
+          await this.loadCategories();
+          break;
+        case 'tags':
+          await this.loadTags();
+          break;
+      }
+    } catch (error) {
+      console.error(`Error loading ${section}:`, error);
+      ErrorHandler.error(`خطا در بارگذاری ${this.getSectionTitle(section)}`);
+    }
+  }
+
+  getSectionTitle(section) {
+    const titles = {
+      'dashboard': 'داشبورد',
+      'posts': 'مقالات',
+      'categories': 'دسته‌بندی‌ها',
+      'tags': 'برچسب‌ها'
+    };
+    return titles[section] || section;
+  }
+
+  async loadDashboard() {
+    try {
+      loadingManager.show('dashboard');
+      
+      const response = await blogAPI.getPostStats();
+      
+      if (response.success) {
+        const stats = response.data;
+        
+        document.getElementById('total-posts').textContent = stats.totalPosts || 0;
+        document.getElementById('published-posts').textContent = stats.publishedPosts || 0;
+        document.getElementById('draft-posts').textContent = stats.draftPosts || 0;
+        document.getElementById('total-views').textContent = stats.totalViews || 0;
+      }
+
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+      // Set default values on error
+      document.getElementById('total-posts').textContent = '0';
+      document.getElementById('published-posts').textContent = '0';
+      document.getElementById('draft-posts').textContent = '0';
+      document.getElementById('total-views').textContent = '0';
+    } finally {
+      loadingManager.hide('dashboard');
+    }
+  }
+
+  async loadPosts() {
+    try {
+      loadingManager.show('posts');
+      
+      const response = await blogAPI.getPosts({ limit: 50 });
+      
+      if (response.success) {
+        this.renderPostsTable(response.data.posts);
+      } else {
+        throw new Error('Failed to load posts');
+      }
+
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      document.getElementById('posts-table-body').innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; color: #dc3545;">
+            خطا در بارگذاری مقالات
+          </td>
+        </tr>
+      `;
+    } finally {
+      loadingManager.hide('posts');
+    }
+  }
+
+  renderPostsTable(posts) {
+    const tbody = document.getElementById('posts-table-body');
+    
+    if (!posts || posts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; color: #6c757d;">
+            هیچ مقاله‌ای یافت نشد
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = posts.map(post => `
+      <tr>
+        <td>
+          <strong>${post.title}</strong>
+          <br>
+          <small style="color: #6c757d;">${blogAPI.truncateText(post.excerpt, 60)}</small>
+        </td>
+        <td>${post.author.name}</td>
+        <td>
+          <span class="status-badge status-${post.status}">
+            ${this.getStatusText(post.status)}
+          </span>
+        </td>
+        <td>${blogAPI.formatPersianDate(post.publishedAt || post.createdAt)}</td>
+        <td>${post.views || 0}</td>
+        <td>
+          <button class="btn btn-success btn-sm" onclick="admin.editPost('${post._id}')" style="margin: 0 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="admin.deletePost('${post._id}')" style="margin: 0 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  getStatusText(status) {
+    const statusTexts = {
+      'published': 'منتشر شده',
+      'draft': 'پیش‌نویس',
+      'archived': 'آرشیو شده'
+    };
+    return statusTexts[status] || status;
+  }
+
+  async loadCategories() {
+    try {
+      loadingManager.show('categories');
+      
+      const response = await blogAPI.getCategories();
+      
+      if (response.success) {
+        this.renderCategories(response.data);
+      } else {
+        throw new Error('Failed to load categories');
+      }
+
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      document.getElementById('categories-list').innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; color: #dc3545;">
+          خطا در بارگذاری دسته‌بندی‌ها
+        </div>
+      `;
+    } finally {
+      loadingManager.hide('categories');
+    }
+  }
+
+  renderCategories(categories) {
+    const container = document.getElementById('categories-list');
+    
+    if (!categories || categories.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; color: #6c757d;">
+          هیچ دسته‌بندی‌ای یافت نشد
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = categories.map(category => `
+      <div class="stat-card" style="background: ${category.color || '#667eea'}; position: relative;">
+        <div style="position: absolute; top: 0.5rem; left: 0.5rem; display: flex; gap: 0.25rem;">
+          <button onclick="admin.editCategory('${category._id}')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="admin.deleteCategory('${category._id}')" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        <i class="${category.icon || 'fas fa-folder'}" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+        <h3>${category.name}</h3>
+        <p>${category.postCount || 0} مقاله</p>
+        ${category.description ? `<small style="opacity: 0.8;">${blogAPI.truncateText(category.description, 50)}</small>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async loadTags() {
+    try {
+      loadingManager.show('tags');
+      
+      const response = await blogAPI.getTags();
+      
+      if (response.success) {
+        this.renderTags(response.data);
+      } else {
+        throw new Error('Failed to load tags');
+      }
+
+    } catch (error) {
+      console.error('Error loading tags:', error);
+      document.getElementById('tags-list').innerHTML = `
+        <span style="color: #dc3545;">خطا در بارگذاری برچسب‌ها</span>
+      `;
+    } finally {
+      loadingManager.hide('tags');
+    }
+  }
+
+  renderTags(tags) {
+    const container = document.getElementById('tags-list');
+    
+    if (!tags || tags.length === 0) {
+      container.innerHTML = `
+        <span style="color: #6c757d;">هیچ برچسبی یافت نشد</span>
+      `;
+      return;
+    }
+
+    container.innerHTML = tags.map(tag => `
+      <span class="tag" style="background: ${tag.color || '#6c757d'}; color: white; position: relative; padding-left: 3rem;">
+        ${tag.name}
+        <span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); display: flex; gap: 0.25rem;">
+          <button onclick="admin.editTag('${tag._id}')" style="background: none; border: none; color: white; cursor: pointer; font-size: 0.7rem;">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="admin.deleteTag('${tag._id}')" style="background: none; border: none; color: white; cursor: pointer; font-size: 0.7rem;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </span>
+      </span>
+    `).join('');
+  }
+
+  // Post Management
+  openPostModal(post = null) {
+    this.currentPost = post;
+    const modal = document.getElementById('post-modal');
+    const title = document.getElementById('post-modal-title');
+    
+    if (post) {
+      title.textContent = 'ویرایش مقاله';
+      this.fillPostForm(post);
+    } else {
+      title.textContent = 'افزودن مقاله جدید';
+      this.clearPostForm();
+    }
+    
+    modal.classList.add('active');
+  }
+
+  closePostModal() {
+    document.getElementById('post-modal').classList.remove('active');
+    this.currentPost = null;
+    this.clearPostForm();
+  }
+
+  fillPostForm(post) {
+    document.getElementById('post-id').value = post._id;
+    document.getElementById('post-title').value = post.title;
+    document.getElementById('post-excerpt').value = post.excerpt;
+    document.getElementById('post-content').value = post.content;
+    document.getElementById('author-name').value = post.author.name;
+    document.getElementById('author-email').value = post.author.email || '';
+    document.getElementById('post-status').value = post.status;
+    
+    if (post.featuredImage?.url) {
+      const imagePreview = document.getElementById('image-preview');
+      imagePreview.src = post.featuredImage.url;
+      imagePreview.style.display = 'block';
+    }
+  }
+
+  clearPostForm() {
+    document.getElementById('post-form').reset();
+    document.getElementById('post-id').value = '';
+    document.getElementById('image-preview').style.display = 'none';
+  }
+
+  async savePost() {
+    try {
+      loadingManager.show('save-post');
+      
+      const formData = new FormData();
+      const postId = document.getElementById('post-id').value;
+      
+      // Add form fields
+      formData.append('title', document.getElementById('post-title').value);
+      formData.append('excerpt', document.getElementById('post-excerpt').value);
+      formData.append('content', document.getElementById('post-content').value);
+      formData.append('author.name', document.getElementById('author-name').value);
+      formData.append('author.email', document.getElementById('author-email').value);
+      formData.append('status', document.getElementById('post-status').value);
+      
+      // Add image if selected
+      const imageFile = document.getElementById('featured-image').files[0];
+      if (imageFile) {
+        formData.append('featuredImage', imageFile);
+      }
+
+      let response;
+      if (postId) {
+        // Update existing post
+        response = await blogAPI.updatePost(postId, formData);
+      } else {
+        // Create new post
+        response = await blogAPI.createPost(formData);
+      }
+
+      if (response.success) {
+        ErrorHandler.success(postId ? 'مقاله با موفقیت به‌روزرسانی شد' : 'مقاله با موفقیت ایجاد شد');
+        this.closePostModal();
+        await this.loadPosts();
+        await this.loadDashboard();
+      } else {
+        throw new Error(response.message || 'خطا در ذخیره مقاله');
+      }
+
+    } catch (error) {
+      console.error('Error saving post:', error);
+      ErrorHandler.error(error.message || 'خطا در ذخیره مقاله');
+    } finally {
+      loadingManager.hide('save-post');
+    }
+  }
+
+  async editPost(postId) {
+    try {
+      loadingManager.show('edit-post');
+      
+      const response = await blogAPI.fetch(`/posts/${postId}`);
+      
+      if (response.success) {
+        this.openPostModal(response.data.post);
+      } else {
+        throw new Error('Post not found');
+      }
+
+    } catch (error) {
+      console.error('Error loading post for edit:', error);
+      ErrorHandler.error('خطا در بارگذاری مقاله');
+    } finally {
+      loadingManager.hide('edit-post');
+    }
+  }
+
+  async deletePost(postId) {
+    if (!confirm('آیا از حذف این مقاله اطمینان دارید؟')) return;
+
+    try {
+      loadingManager.show('delete-post');
+      
+      const response = await blogAPI.deletePost(postId);
+      
+      if (response.success) {
+        ErrorHandler.success('مقاله با موفقیت حذف شد');
+        await this.loadPosts();
+        await this.loadDashboard();
+      } else {
+        throw new Error(response.message || 'خطا در حذف مقاله');
+      }
+
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      ErrorHandler.error(error.message || 'خطا در حذف مقاله');
+    } finally {
+      loadingManager.hide('delete-post');
+    }
+  }
+
+  // Category Management
+  openCategoryModal(category = null) {
+    this.currentCategory = category;
+    const modal = document.getElementById('category-modal');
+    const title = document.getElementById('category-modal-title');
+    
+    if (category) {
+      title.textContent = 'ویرایش دسته‌بندی';
+      this.fillCategoryForm(category);
+    } else {
+      title.textContent = 'افزودن دسته‌بندی جدید';
+      this.clearCategoryForm();
+    }
+    
+    modal.classList.add('active');
+  }
+
+  closeCategoryModal() {
+    document.getElementById('category-modal').classList.remove('active');
+    this.currentCategory = null;
+    this.clearCategoryForm();
+  }
+
+  fillCategoryForm(category) {
+    document.getElementById('category-id').value = category._id;
+    document.getElementById('category-name').value = category.name;
+    document.getElementById('category-description').value = category.description || '';
+    document.getElementById('category-color').value = category.color || '#667eea';
+    document.getElementById('category-icon').value = category.icon || 'fas fa-folder';
+  }
+
+  clearCategoryForm() {
+    document.getElementById('category-form').reset();
+    document.getElementById('category-id').value = '';
+    document.getElementById('category-color').value = '#667eea';
+    document.getElementById('category-icon').value = 'fas fa-folder';
+  }
+
+  async saveCategory() {
+    try {
+      loadingManager.show('save-category');
+      
+      const categoryId = document.getElementById('category-id').value;
+      const data = {
+        name: document.getElementById('category-name').value,
+        description: document.getElementById('category-description').value,
+        color: document.getElementById('category-color').value,
+        icon: document.getElementById('category-icon').value
+      };
+
+      let response;
+      if (categoryId) {
+        response = await blogAPI.updateCategory(categoryId, data);
+      } else {
+        response = await blogAPI.createCategory(data);
+      }
+
+      if (response.success) {
+        ErrorHandler.success(categoryId ? 'دسته‌بندی با موفقیت به‌روزرسانی شد' : 'دسته‌بندی با موفقیت ایجاد شد');
+        this.closeCategoryModal();
+        await this.loadCategories();
+      } else {
+        throw new Error(response.message || 'خطا در ذخیره دسته‌بندی');
+      }
+
+    } catch (error) {
+      console.error('Error saving category:', error);
+      ErrorHandler.error(error.message || 'خطا در ذخیره دسته‌بندی');
+    } finally {
+      loadingManager.hide('save-category');
+    }
+  }
+
+  async editCategory(categoryId) {
+    try {
+      loadingManager.show('edit-category');
+      
+      const response = await blogAPI.getCategory(categoryId);
+      
+      if (response.success) {
+        this.openCategoryModal(response.data);
+      } else {
+        throw new Error('Category not found');
+      }
+
+    } catch (error) {
+      console.error('Error loading category for edit:', error);
+      ErrorHandler.error('خطا در بارگذاری دسته‌بندی');
+    } finally {
+      loadingManager.hide('edit-category');
+    }
+  }
+
+  async deleteCategory(categoryId) {
+    if (!confirm('آیا از حذف این دسته‌بندی اطمینان دارید؟')) return;
+
+    try {
+      loadingManager.show('delete-category');
+      
+      const response = await blogAPI.deleteCategory(categoryId);
+      
+      if (response.success) {
+        ErrorHandler.success('دسته‌بندی با موفقیت حذف شد');
+        await this.loadCategories();
+      } else {
+        throw new Error(response.message || 'خطا در حذف دسته‌بندی');
+      }
+
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      ErrorHandler.error(error.message || 'خطا در حذف دسته‌بندی');
+    } finally {
+      loadingManager.hide('delete-category');
+    }
+  }
+
+  // Tag Management
+  openTagModal(tag = null) {
+    this.currentTag = tag;
+    const modal = document.getElementById('tag-modal');
+    const title = document.getElementById('tag-modal-title');
+    
+    if (tag) {
+      title.textContent = 'ویرایش برچسب';
+      this.fillTagForm(tag);
+    } else {
+      title.textContent = 'افزودن برچسب جدید';
+      this.clearTagForm();
+    }
+    
+    modal.classList.add('active');
+  }
+
+  closeTagModal() {
+    document.getElementById('tag-modal').classList.remove('active');
+    this.currentTag = null;
+    this.clearTagForm();
+  }
+
+  fillTagForm(tag) {
+    document.getElementById('tag-id').value = tag._id;
+    document.getElementById('tag-name').value = tag.name;
+    document.getElementById('tag-color').value = tag.color || '#6c757d';
+  }
+
+  clearTagForm() {
+    document.getElementById('tag-form').reset();
+    document.getElementById('tag-id').value = '';
+    document.getElementById('tag-color').value = '#6c757d';
+  }
+
+  async saveTag() {
+    try {
+      loadingManager.show('save-tag');
+      
+      const tagId = document.getElementById('tag-id').value;
+      const data = {
+        name: document.getElementById('tag-name').value,
+        color: document.getElementById('tag-color').value
+      };
+
+      let response;
+      if (tagId) {
+        response = await blogAPI.updateTag(tagId, data);
+      } else {
+        response = await blogAPI.createTag(data);
+      }
+
+      if (response.success) {
+        ErrorHandler.success(tagId ? 'برچسب با موفقیت به‌روزرسانی شد' : 'برچسب با موفقیت ایجاد شد');
+        this.closeTagModal();
+        await this.loadTags();
+      } else {
+        throw new Error(response.message || 'خطا در ذخیره برچسب');
+      }
+
+    } catch (error) {
+      console.error('Error saving tag:', error);
+      ErrorHandler.error(error.message || 'خطا در ذخیره برچسب');
+    } finally {
+      loadingManager.hide('save-tag');
+    }
+  }
+
+  async editTag(tagId) {
+    try {
+      loadingManager.show('edit-tag');
+      
+      const response = await blogAPI.getTag(tagId);
+      
+      if (response.success) {
+        this.openTagModal(response.data);
+      } else {
+        throw new Error('Tag not found');
+      }
+
+    } catch (error) {
+      console.error('Error loading tag for edit:', error);
+      ErrorHandler.error('خطا در بارگذاری برچسب');
+    } finally {
+      loadingManager.hide('edit-tag');
+    }
+  }
+
+  async deleteTag(tagId) {
+    if (!confirm('آیا از حذف این برچسب اطمینان دارید؟')) return;
+
+    try {
+      loadingManager.show('delete-tag');
+      
+      const response = await blogAPI.deleteTag(tagId);
+      
+      if (response.success) {
+        ErrorHandler.success('برچسب با موفقیت حذف شد');
+        await this.loadTags();
+      } else {
+        throw new Error(response.message || 'خطا در حذف برچسب');
+      }
+
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      ErrorHandler.error(error.message || 'خطا در حذف برچسب');
+    } finally {
+      loadingManager.hide('delete-tag');
+    }
+  }
+}
+
+// Initialize admin panel when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  window.admin = new AdminPanel();
+});
+```
+
+## frontend\public\js\api.js
+
+```
+// Frontend API Client
+class BlogAPI {
+  constructor() {
+    this.baseURL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000/api' 
+      : '/api';
+    this.cache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+  }
+
+  // Generic fetch method with error handling
+  async fetch(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        ...options
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+
+    } catch (error) {
+      console.error(`API Error for ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  // Cache management
+  getCached(key) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    this.cache.delete(key);
+    return null;
+  }
+
+  setCache(key, data) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  // Posts API
+  async getPosts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/posts${queryString ? `?${queryString}` : ''}`;
+    const cacheKey = `posts_${queryString}`;
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch(endpoint);
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async getPost(slug) {
+    const cacheKey = `post_${slug}`;
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch(`/posts/${slug}`);
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async getFeaturedPosts() {
+    const cacheKey = 'featured_posts';
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch('/posts/featured');
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async createPost(formData) {
+    return await this.fetch('/posts', {
+      method: 'POST',
+      body: formData,
+      headers: {} // Let browser set Content-Type for FormData
+    });
+  }
+
+  async updatePost(id, formData) {
+    return await this.fetch(`/posts/${id}`, {
+      method: 'PUT',
+      body: formData,
+      headers: {} // Let browser set Content-Type for FormData
+    });
+  }
+
+  async deletePost(id) {
+    return await this.fetch(`/posts/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getPostStats() {
+    const cacheKey = 'post_stats';
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch('/posts/stats/summary');
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  // Categories API
+  async getCategories() {
+    const cacheKey = 'categories';
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch('/categories');
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async getCategory(slug) {
+    const cacheKey = `category_${slug}`;
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch(`/categories/${slug}`);
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async createCategory(data) {
+    const response = await this.fetch('/categories', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    
+    // Clear categories cache
+    this.cache.delete('categories');
+    return response;
+  }
+
+  async updateCategory(id, data) {
+    const response = await this.fetch(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    
+    // Clear categories cache
+    this.cache.delete('categories');
+    return response;
+  }
+
+  async deleteCategory(id) {
+    const response = await this.fetch(`/categories/${id}`, {
+      method: 'DELETE'
+    });
+    
+    // Clear categories cache
+    this.cache.delete('categories');
+    return response;
+  }
+
+  // Tags API
+  async getTags() {
+    const cacheKey = 'tags';
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch('/tags');
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async getTag(slug) {
+    const cacheKey = `tag_${slug}`;
+    
+    // Check cache first
+    const cached = this.getCached(cacheKey);
+    if (cached) return cached;
+
+    const response = await this.fetch(`/tags/${slug}`);
+    this.setCache(cacheKey, response);
+    return response;
+  }
+
+  async createTag(data) {
+    const response = await this.fetch('/tags', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    
+    // Clear tags cache
+    this.cache.delete('tags');
+    return response;
+  }
+
+  async updateTag(id, data) {
+    const response = await this.fetch(`/tags/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    
+    // Clear tags cache
+    this.cache.delete('tags');
+    return response;
+  }
+
+  async deleteTag(id) {
+    const response = await this.fetch(`/tags/${id}`, {
+      method: 'DELETE'
+    });
+    
+    // Clear tags cache
+    this.cache.delete('tags');
+    return response;
+  }
+
+  // Utility methods
+  clearCache() {
+    this.cache.clear();
+  }
+
+  // Format date for Persian display
+  formatPersianDate(dateString) {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('fa-IR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  }
+
+  // Get icon for category/tag
+  getIcon(iconClass = 'fas fa-folder') {
+    return iconClass;
+  }
+
+  // Truncate text
+  truncateText(text, maxLength = 150) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+  }
+
+  // Search functionality
+  async searchPosts(query, filters = {}) {
+    const params = {
+      search: query,
+      ...filters
+    };
+    
+    return await this.getPosts(params);
+  }
+
+  // Debounced search
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+}
+
+// Create global API instance
+window.blogAPI = new BlogAPI();
+
+// Loading states management
+class LoadingManager {
+  constructor() {
+    this.activeLoaders = new Set();
+  }
+
+  show(loaderId) {
+    this.activeLoaders.add(loaderId);
+    this.updateUI();
+  }
+
+  hide(loaderId) {
+    this.activeLoaders.delete(loaderId);
+    this.updateUI();
+  }
+
+  updateUI() {
+    const isLoading = this.activeLoaders.size > 0;
+    
+    // Update loading indicators
+    document.querySelectorAll('.loading-spinner').forEach(spinner => {
+      spinner.style.display = isLoading ? 'block' : 'none';
+    });
+
+    // Update loading overlay
+    const overlay = document.querySelector('.loading-overlay');
+    if (overlay) {
+      overlay.style.display = isLoading ? 'flex' : 'none';
+    }
+
+    // Update cursor
+    document.body.style.cursor = isLoading ? 'wait' : 'default';
+  }
+
+  async withLoading(loaderId, asyncFunction) {
+    try {
+      this.show(loaderId);
+      return await asyncFunction();
+    } finally {
+      this.hide(loaderId);
+    }
+  }
+}
+
+// Create global loading manager
+window.loadingManager = new LoadingManager();
+
+// Error handling utilities
+class ErrorHandler {
+  static show(message, type = 'error') {
+    // Remove existing notifications
+    document.querySelectorAll('.notification').forEach(n => n.remove());
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+
+    // Add styles
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === 'error' ? '#dc3545' : '#28a745'};
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 10000;
+      max-width: 400px;
+      animation: slideInRight 0.3s ease;
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 5000);
+  }
+
+  static success(message) {
+    this.show(message, 'success');
+  }
+
+  static error(message) {
+    this.show(message, 'error');
+  }
+}
+
+// Make ErrorHandler globally available
+window.ErrorHandler = ErrorHandler;
+
+// Add CSS for notifications
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-left: auto;
+  }
+
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(notificationStyles);
+
+console.log('🚀 Blog API Client initialized successfully!');
+```
+
+## frontend\public\js\blog.js
+
+```
+// Blog Frontend Main Logic
+class BlogFrontend {
+  constructor() {
+    this.currentPage = 1;
+    this.currentFilters = {};
+    this.postsPerPage = 6;
+    this.searchTimeout = null;
+    
+    this.init();
+  }
+
+  async init() {
+    try {
+      // Initialize event listeners
+      this.setupEventListeners();
+      
+      // Load initial data
+      await Promise.all([
+        this.loadPosts(),
+        this.loadCategories(),
+        this.loadTags(),
+        this.loadFeaturedPosts()
+      ]);
+
+      // Setup scroll effects
+      this.setupScrollEffects();
+      
+      console.log('✅ Blog frontend initialized successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error initializing blog:', error);
+      ErrorHandler.error('خطا در بارگذاری اولیه بلاگ');
+    }
+  }
+
+  setupEventListeners() {
+    // Search functionality
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    if (searchInput && searchBtn) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+          this.handleSearch(e.target.value);
+        }, 500);
+      });
+
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this.handleSearch(e.target.value);
+        }
+      });
+
+      searchBtn.addEventListener('click', () => {
+        this.handleSearch(searchInput.value);
+      });
+    }
+
+    // Clear filters
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener('click', () => {
+        this.clearAllFilters();
+      });
+    }
+
+    // CTA button smooth scroll
+    const ctaButton = document.querySelector('.cta-button[href="#posts"]');
+    if (ctaButton) {
+      ctaButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('posts').scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      });
+    }
+
+    // Mobile menu
+    this.setupMobileMenu();
+  }
+
+  setupMobileMenu() {
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    const navMenu = document.querySelector('.nav-menu');
+    
+    if (mobileBtn && navMenu) {
+      mobileBtn.addEventListener('click', () => {
+        navMenu.classList.toggle('active');
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !mobileBtn.contains(e.target)) {
+          navMenu.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  setupScrollEffects() {
+    // Header scroll effect
+    let lastScrollY = window.scrollY;
+    
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('.header');
+      if (!header) return;
+
+      if (window.scrollY > 50) {
+        header.style.background = 'rgba(44, 44, 84, 0.95)';
+        header.style.backdropFilter = 'blur(10px)';
+      } else {
+        header.style.background = '#2c2c54';
+        header.style.backdropFilter = 'none';
+      }
+
+      lastScrollY = window.scrollY;
+    });
+
+    // Animate posts on scroll
+    this.setupScrollAnimation();
+  }
+
+  setupScrollAnimation() {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all blog cards
+    document.querySelectorAll('.blog-card').forEach(card => {
+      observer.observe(card);
+    });
+  }
+
+  async loadPosts(page = 1, filters = {}) {
+    try {
+      loadingManager.show('posts');
+      
+      const params = {
+        page,
+        limit: this.postsPerPage,
+        ...filters
+      };
+
+      const response = await blogAPI.getPosts(params);
+      
+      if (response.success) {
+        this.renderPosts(response.data.posts);
+        this.renderPagination(response.data.pagination);
+        this.currentPage = page;
+        this.currentFilters = filters;
+      } else {
+        throw new Error('Failed to load posts');
+      }
+
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      this.showNoPosts();
+      ErrorHandler.error('خطا در بارگذاری مقالات');
+    } finally {
+      loadingManager.hide('posts');
+    }
+  }
+
+  renderPosts(posts) {
+    const container = document.getElementById('posts-container');
+    const noPostsDiv = document.getElementById('no-posts');
+    
+    if (!container) return;
+
+    if (!posts || posts.length === 0) {
+      this.showNoPosts();
+      return;
+    }
+
+    // Hide no posts message and loading
+    noPostsDiv.style.display = 'none';
+    
+    // Generate posts HTML
+    container.innerHTML = posts.map(post => this.createPostCard(post)).join('');
+
+    // Setup click handlers for post cards
+    container.querySelectorAll('.blog-card').forEach((card, index) => {
+      card.addEventListener('click', () => {
+        const slug = posts[index].slug;
+        window.location.href = `post.html?slug=${slug}`;
+      });
+
+      // Add animation delay
+      card.style.animationDelay = `${index * 0.1}s`;
+    });
+
+    // Re-setup scroll animation for new cards
+    setTimeout(() => this.setupScrollAnimation(), 100);
+  }
+
+  createPostCard(post) {
+    const featuredImage = post.featuredImage?.url 
+      ? `<img src="${post.featuredImage.url}" alt="${post.featuredImage.alt || post.title}" style="width: 100%; height: 100%; object-fit: cover;">`
+      : `<i class="fas fa-${this.getPostIcon(post.categories)}"></i>`;
+
+    const categories = post.categories?.map(cat => 
+      `<span style="color: ${cat.color || '#667eea'}">${cat.name}</span>`
+    ).join(', ') || '';
+
+    const tags = post.tags?.slice(0, 2).map(tag => tag.name).join(', ') || '';
+
+    return `
+      <article class="blog-card" data-slug="${post.slug}">
+        <div class="blog-card-image">
+          ${featuredImage}
+        </div>
+        <div class="blog-card-content">
+          <h3>${post.title}</h3>
+          <div class="blog-meta">
+            <span><i class="fas fa-calendar-alt"></i> ${blogAPI.formatPersianDate(post.publishedAt)}</span>
+            <span><i class="fas fa-user"></i> ${post.author.name}</span>
+            ${categories ? `<span><i class="fas fa-tag"></i> ${categories}</span>` : ''}
+            <span><i class="fas fa-eye"></i> ${post.views || 0} بازدید</span>
+            ${post.readingTime ? `<span><i class="fas fa-clock"></i> ${post.readingTime} دقیقه</span>` : ''}
+          </div>
+          <p class="blog-excerpt">
+            ${blogAPI.truncateText(post.excerpt, 150)}
+          </p>
+          <a href="post.html?slug=${post.slug}" class="read-more" onclick="event.stopPropagation()">
+            ادامه مطلب <i class="fas fa-arrow-left"></i>
+          </a>
+        </div>
+      </article>
+    `;
+  }
+
+  getPostIcon(categories) {
+    if (!categories || categories.length === 0) return 'file-alt';
+    
+    const iconMap = {
+      'unity': 'gamepad',
+      'mq5': 'chart-line',
+      'trading': 'chart-bar',
+      'ai': 'brain',
+      'performance': 'tachometer-alt',
+      'mobile': 'mobile-alt',
+      'networking': 'network-wired'
+    };
+
+    const category = categories[0];
+    const categoryName = category.name?.toLowerCase() || category.toLowerCase();
+    
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (categoryName.includes(key)) {
+        return icon;
+      }
+    }
+    
+    return 'code';
+  }
+
+  showNoPosts() {
+    const container = document.getElementById('posts-container');
+    const noPostsDiv = document.getElementById('no-posts');
+    
+    if (container) container.innerHTML = '';
+    if (noPostsDiv) noPostsDiv.style.display = 'block';
+    
+    // Hide pagination
+    const paginationContainer = document.getElementById('pagination-container');
+    if (paginationContainer) paginationContainer.style.display = 'none';
+  }
+
+  renderPagination(pagination) {
+    const container = document.getElementById('pagination-container');
+    if (!container || !pagination) return;
+
+    const { currentPage, totalPages, hasNextPage, hasPrevPage } = pagination;
+
+    if (totalPages <= 1) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'flex';
+
+    let paginationHTML = '';
+
+    // Previous button
+    if (hasPrevPage) {
+      paginationHTML += `<a href="#" data-page="${currentPage - 1}"><i class="fas fa-chevron-right"></i></a>`;
+    }
+
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+      paginationHTML += `<a href="#" data-page="1">1</a>`;
+      if (startPage > 2) {
+        paginationHTML += `<span>...</span>`;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      if (i === currentPage) {
+        paginationHTML += `<span class="current">${i}</span>`;
+      } else {
+        paginationHTML += `<a href="#" data-page="${i}">${i}</a>`;
+      }
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        paginationHTML += `<span>...</span>`;
+      }
+      paginationHTML += `<a href="#" data-page="${totalPages}">${totalPages}</a>`;
+    }
+
+    // Next button
+    if (hasNextPage) {
+      paginationHTML += `<a href="#" data-page="${currentPage + 1}"><i class="fas fa-chevron-left"></i></a>`;
+    }
+
+    container.innerHTML = paginationHTML;
+
+    // Add click handlers
+    container.querySelectorAll('a[data-page]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(e.target.dataset.page);
+        this.loadPosts(page, this.currentFilters);
+        
+        // Scroll to top of posts
+        document.getElementById('posts').scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      });
+    });
+  }
+
+  async loadCategories() {
+    try {
+      const response = await blogAPI.getCategories();
+      
+      if (response.success) {
+        this.renderCategories(response.data);
+      }
+
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      document.getElementById('categories-list').innerHTML = '<li>خطا در بارگذاری دسته‌بندی‌ها</li>';
+    }
+  }
+
+  renderCategories(categories) {
+    const container = document.getElementById('categories-list');
+    if (!container) return;
+
+    if (!categories || categories.length === 0) {
+      container.innerHTML = '<li>دسته‌بندی‌ای یافت نشد</li>';
+      return;
+    }
+
+    container.innerHTML = categories.map(category => `
+      <li>
+        <a href="#" data-category-id="${category._id}" style="color: ${category.color || '#495057'}">
+          ${category.name}
+          <span class="category-count">${category.postCount || 0}</span>
+        </a>
+      </li>
+    `).join('');
+
+    // Add click handlers
+    container.querySelectorAll('a[data-category-id]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.filterByCategory(e.target.dataset.categoryId);
+        
+        // Update active state
+        container.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+  }
+
+  async loadTags() {
+    try {
+      const response = await blogAPI.getTags();
+      
+      if (response.success) {
+        this.renderTags(response.data);
+      }
+
+    } catch (error) {
+      console.error('Error loading tags:', error);
+      document.getElementById('tags-cloud').innerHTML = '<span>خطا در بارگذاری برچسب‌ها</span>';
+    }
+  }
+
+  renderTags(tags) {
+    const container = document.getElementById('tags-cloud');
+    if (!container) return;
+
+    if (!tags || tags.length === 0) {
+      container.innerHTML = '<span>برچسبی یافت نشد</span>';
+      return;
+    }
+
+    // Sort by popularity and take top 10
+    const popularTags = tags
+      .sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
+      .slice(0, 10);
+
+    container.innerHTML = popularTags.map(tag => `
+      <a href="#" class="tag" data-tag-id="${tag._id}" style="background-color: ${tag.color || '#f8f9fa'}">
+        ${tag.name}
+      </a>
+    `).join('');
+
+    // Add click handlers
+    container.querySelectorAll('a[data-tag-id]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.filterByTag(e.target.dataset.tagId);
+        
+        // Update active state
+        container.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+  }
+
+  async loadFeaturedPosts() {
+    try {
+      const response = await blogAPI.getFeaturedPosts();
+      
+      if (response.success) {
+        this.renderFeaturedPosts(response.data);
+      }
+
+    } catch (error) {
+      console.error('Error loading featured posts:', error);
+      document.getElementById('featured-posts').innerHTML = '<li>خطا در بارگذاری مقالات پربازدید</li>';
+    }
+  }
+
+  renderFeaturedPosts(posts) {
+    const container = document.getElementById('featured-posts');
+    if (!container) return;
+
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<li>مقاله‌ای یافت نشد</li>';
+      return;
+    }
+
+    container.innerHTML = posts.map(post => `
+      <li>
+        <a href="post.html?slug=${post.slug}">
+          ${blogAPI.truncateText(post.title, 60)}
+        </a>
+      </li>
+    `).join('');
+  }
+
+  async handleSearch(query) {
+    if (!query.trim()) {
+      this.clearAllFilters();
+      return;
+    }
+
+    const filters = { search: query.trim() };
+    await this.loadPosts(1, filters);
+  }
+
+  async filterByCategory(categoryId) {
+    const filters = { category: categoryId };
+    await this.loadPosts(1, filters);
+  }
+
+  async filterByTag(tagId) {
+    const filters = { tag: tagId };
+    await this.loadPosts(1, filters);
+  }
+
+  async clearAllFilters() {
+    // Clear search input
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = '';
+
+    // Remove active states
+    document.querySelectorAll('.category-list a, .tag').forEach(item => {
+      item.classList.remove('active');
+    });
+
+    // Load all posts
+    await this.loadPosts(1, {});
+  }
+
+  // Utility method to refresh current view
+  async refresh() {
+    await this.loadPosts(this.currentPage, this.currentFilters);
+  }
+}
+
+// Initialize blog when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  window.blogFrontend = new BlogFrontend();
+});
+
+// Handle page visibility change to refresh data
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && window.blogFrontend) {
+    // Refresh data when page becomes visible (user returns to tab)
+    setTimeout(() => {
+      window.blogFrontend.refresh();
+    }, 1000);
+  }
+});
 ```
 

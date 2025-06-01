@@ -85,6 +85,8 @@ app.use((err, req, res, next) => {
       : err.message
   });
 });
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);            // new
 
 // 404 handler
 app.use('*', (req, res) => {

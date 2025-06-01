@@ -207,80 +207,88 @@ router.get('/:slug', [
     });
   }
 });
-
+const auth = require('../middleware/auth');
 // POST /api/posts - Create new post
-router.post('/', upload.single('featuredImage'), validatePost, handleValidationErrors, async (req, res) => {
-  try {
-    const postData = {
-      title: req.body.title,
-      excerpt: req.body.excerpt,
-      content: req.body.content,
-      author: {
-        name: req.body['author.name'],
-        email: req.body['author.email']
-      },
-      status: req.body.status || 'draft'
-    };
-
-    // Handle featured image
-    if (req.file) {
-      postData.featuredImage = {
-        url: `/uploads/${req.file.filename}`,
-        filename: req.file.filename,
-        alt: req.body.imageAlt || postData.title
+router.post(
+  '/',
+  auth,
+  upload.single('featuredImage'),
+  async (req, res) => {
+    try {
+      /* ────── Build the post payload ────── */
+      const postData = {
+        title:   req.body.title,
+        excerpt: req.body.excerpt,
+        content: req.body.content,
+        author: {
+          id:    req.user._id,   // added for convenience if you want to reference later
+          name:  req.user.name,
+          email: req.user.email
+        },
+        status: req.body.status || 'draft'
       };
-    }
 
-    // Handle categories
-    if (req.body.categories) {
-      const categoryIds = Array.isArray(req.body.categories) 
-        ? req.body.categories 
-        : req.body.categories.split(',');
-      postData.categories = categoryIds;
-    }
+      /* ────── Featured image (multipart/form-data) ────── */
+      if (req.file) {
+        postData.featuredImage = {
+          url:      `/uploads/${req.file.filename}`,
+          filename: req.file.filename,
+          alt:      req.body.imageAlt || postData.title
+        };
+      }
 
-    // Handle tags
-    if (req.body.tags) {
-      const tagIds = Array.isArray(req.body.tags) 
-        ? req.body.tags 
-        : req.body.tags.split(',');
-      postData.tags = tagIds;
-    }
+      /* ────── Categories ────── */
+      if (req.body.categories) {
+        const categoryIds = Array.isArray(req.body.categories)
+          ? req.body.categories
+          : req.body.categories.split(',');
+        postData.categories = categoryIds;
+      }
 
-    // Handle SEO data
-    if (req.body.seo) {
-      postData.seo = JSON.parse(req.body.seo);
-    }
+      /* ────── Tags ────── */
+      if (req.body.tags) {
+        const tagIds = Array.isArray(req.body.tags)
+          ? req.body.tags
+          : req.body.tags.split(',');
+        postData.tags = tagIds;
+      }
 
-    const post = new Post(postData);
-    await post.save();
+      /* ────── SEO (expects a JSON string) ────── */
+      if (req.body.seo) {
+        postData.seo = JSON.parse(req.body.seo);
+      }
 
-    const populatedPost = await Post.findById(post._id)
-      .populate('categories', 'name slug color')
-      .populate('tags', 'name slug color');
+      /* ────── Save & populate ────── */
+      const post = new Post(postData);
+      await post.save();
 
-    res.status(201).json({
-      success: true,
-      message: 'پست با موفقیت ایجاد شد',
-      data: populatedPost
-    });
+      const populatedPost = await Post.findById(post._id)
+        .populate('categories', 'name slug color')
+        .populate('tags', 'name slug color');
 
-  } catch (error) {
-    console.error('Error creating post:', error);
-    
-    if (error.code === 11000) {
-      return res.status(400).json({
-        error: 'پست تکراری',
-        message: 'پستی با این عنوان قبلاً ایجاد شده است'
+      return res.status(201).json({
+        success: true,
+        message: 'پست با موفقیت ایجاد شد',
+        data: populatedPost
+      });
+    } catch (error) {
+      console.error('Error creating post:', error);
+
+      if (error.code === 11000) {
+        return res.status(400).json({
+          error: 'پست تکراری',
+          message: 'پستی با این عنوان قبلاً ایجاد شده است'
+        });
+      }
+
+      return res.status(500).json({
+        error: 'خطا در ایجاد پست',
+        message: error.message
       });
     }
-    
-    res.status(500).json({
-      error: 'خطا در ایجاد پست',
-      message: error.message
-    });
   }
-});
+);
+
 
 // PUT /api/posts/:id - Update post
 router.put('/:id', [
