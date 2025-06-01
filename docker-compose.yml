@@ -1,5 +1,4 @@
-# docker-compose.yml (fixed indentation – `env_file` is now at service level)
-
+# docker-compose.yml
 x-health: &default-healthcheck
   interval: 30s
   timeout: 10s
@@ -15,15 +14,14 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-n8bn_blog}
+      MONGO_INITDB_DATABASE:  ${MONGO_DATABASE:-n8bn_blog}
     ports:
       - "${MONGO_PORT:-27017}:27017"
     volumes:
       - mongo_data:/data/db
       - mongo_config:/data/configdb
       - ./backend/src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    networks:
-      - blog-network
+    networks: [blog-network]
     healthcheck:
       test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ping:1})' || exit 1"]
       <<: *default-healthcheck
@@ -36,11 +34,11 @@ services:
       dockerfile: Dockerfile
     container_name: n8bn-blog-backend
     restart: unless-stopped
-    env_file:                       # <- env vars (JWT_SECRET, etc.) injected here
+    env_file:                # JWT_SECRET, JWT_EXPIRES_IN, etc.
       - .env
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3000
+      NODE_ENV:   ${NODE_ENV:-production}
+      PORT:       3000
       MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-admin123}@mongo:27017/${MONGO_DATABASE:-n8bn_blog}?authSource=admin
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
     ports:
@@ -51,8 +49,7 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    networks:
-      - blog-network
+    networks: [blog-network]
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       <<: *default-healthcheck
@@ -67,21 +64,20 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-    API_URL: "/api"
-    NODE_ENV: ${NODE_ENV:-production}
+    environment:            # ← mapping fixed here
+      API_URL: "/api"       # front-end talks to /api (same origin)
+      NODE_ENV: ${NODE_ENV:-production}
     ports:
-       - "${FRONTEND_PORT:-8080}:8080"
+      - "${FRONTEND_PORT:-8080}:8080"
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - blog-network
+    networks: [blog-network]
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health.html"]
       <<: *default-healthcheck
 
-  # ───────────── Mongo Express (optional profile) ─────────────
+  # ───────────── Mongo Express (optional) ─────────────
   mongo-express:
     image: mongo-express:latest
     container_name: n8bn-blog-mongo-express
@@ -97,10 +93,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    networks:
-      - blog-network
-    profiles:
-      - admin
+    networks: [blog-network]
+    profiles: [admin]
 
 # ──────────────────────── Volumes & Networks ───────────────────────
 volumes:
