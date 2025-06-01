@@ -65,7 +65,7 @@ services:
     env_file:
       - .env
     environment:            # ← mapping fixed here
-      API_URL: "/api"       # front-end talks to /api (same origin)
+      API_URL: "http://213.139.72.122:3000/api"       # front-end talks to /api (same origin)
       NODE_ENV: ${NODE_ENV:-production}
     ports:
       - "${FRONTEND_PORT:-8080}:8080"
