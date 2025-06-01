@@ -1,0 +1,24 @@
+
+{
+  "name": "n8bn-blog-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for N8BN Blog",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server public -p 8080 -c-1",
+    "build": "npm run copy-files && npm run optimize",
+    "copy-files": "cp -r pages/* public/ && cp -r js public/ && cp -r css public/ && cp -r assets public/",
+    "optimize": "echo 'Frontend optimization complete'",
+    "dev": "http-server public -p 8080 -c-1 -o"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.2",
+    "uglify-js": "^3.17.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

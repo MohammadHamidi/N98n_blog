@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت - N98N</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8f9fa;
+            min-height: calc(100vh - 200px);
+        }
+
+        .admin-header {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-nav button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #e9ecef;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .admin-nav button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+        }
+
+        .admin-nav button:hover:not(.active) {
+            background: #dee2e6;
+        }
+
+        .admin-content {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c2c54;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .content-editor {
+            min-height: 300px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: #ffffff;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: #ffffff;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: #ffffff;
+        }
+
+        .posts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .posts-table th,
+        .posts-table td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .posts-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c2c54;
+        }
+
+        .posts-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-archived {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .image-upload {
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .image-upload.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            min-height: 45px;
+        }
+
+        .tag-item {
+            background: #667eea;
+            color: #ffffff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+
+            .admin-nav {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .posts-table {
+                font-size: 0.8rem;
+            }
+
+            .posts-table th,
+            .posts-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+   <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="https://n98n.ir" class="logo">
+                <img src="logo.svg" alt="N98N Logo" class="logo-svg">
+            </a>
+            <ul class="nav-menu">
+                <!-- <li><a href="#support">پشتیبانی</a></li>
+                <li><a href="#about">درباره ما</a></li>
+                <li><a href="#pricing">قیمت گذاری</a></li>
+                <li><a href="#services">خدمات</a></li>
+                <li><a href="#docs">مستندات</a></li> -->
+                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                <!-- <li><a href="admin.html" class="auth-btn">پنل مدیریت</a></li> -->
+            </ul>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Admin Container -->
+    <div class="admin-container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <h1>پنل مدیریت بلاگ</h1>
+            <p>مدیریت مقالات، دسته‌بندی‌ها و برچسب‌های بلاگ N98N</p>
+        </div>
+
+        <!-- Admin Navigation -->
+        <div class="admin-nav">
+            <button class="admin-nav-btn active" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i> داشبورد
+            </button>
+            <button class="admin-nav-btn" data-section="posts">
+                <i class="fas fa-file-alt"></i> مقالات
+            </button>
+            <button class="admin-nav-btn" data-section="categories">
+                <i class="fas fa-folder"></i> دسته‌بندی‌ها
+            </button>
+            <button class="admin-nav-btn" data-section="tags">
+                <i class="fas fa-tags"></i> برچسب‌ها
+            </button>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="admin-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="admin-section active">
+                <h2>آمار کلی</h2>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-posts">-</h3>
+                        <p>کل مقالات</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="published-posts">-</h3>
+                        <p>مقالات منتشر شده</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="draft-posts">-</h3>
+                        <p>پیش‌نویس‌ها</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="total-views">-</h3>
+                        <p>کل بازدیدها</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Posts Section -->
+            <div id="posts" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت مقالات</h2>
+                    <button class="btn btn-primary" id="add-post-btn">
+                        <i class="fas fa-plus"></i> افزودن مقاله جدید
+                    </button>
+                </div>
+
+                <div id="posts-table-container">
+                    <table class="posts-table" id="posts-table">
+                        <thead>
+                            <tr>
+                                <th>عنوان</th>
+                                <th>نویسنده</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ انتشار</th>
+                                <th>بازدید</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posts-table-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem;">
+                                    <div class="loading-spinner" style="margin: 0 auto;"></div>
+                                    <p>در حال بارگذاری...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div id="categories" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت دسته‌بندی‌ها</h2>
+                    <button class="btn btn-primary" id="add-category-btn">
+                        <i class="fas fa-plus"></i> افزودن دسته‌بندی جدید
+                    </button>
+                </div>
+
+                <div id="categories-list" class="stats-grid">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Tags Section -->
+            <div id="tags" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>مدیریت برچسب‌ها</h2>
+                    <button class="btn btn-primary" id="add-tag-btn">
+                        <i class="fas fa-plus"></i> افزودن برچسب جدید
+                    </button>
+                </div>
+
+                <div id="tags-list" class="tags-cloud">
+                    <!-- Tags will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Modal -->
+    <div id="post-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="post-modal-title">افزودن مقاله جدید</h3>
+                <button class="modal-close" id="post-modal-close">&times;</button>
+            </div>
+            <form id="post-form">
+                <input type="hidden" id="post-id">
+                
+                <div class="form-group">
+                    <label for="post-title">عنوان مقاله *</label>
+                    <input type="text" id="post-title" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-excerpt">خلاصه مقاله *</label>
+                    <textarea id="post-excerpt" class="form-control" required placeholder="خلاصه‌ای از محتوای مقاله..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-content">محتوای مقاله *</label>
+                    <textarea id="post-content" class="form-control content-editor" required placeholder="محتوای کامل مقاله..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="author-name">نام نویسنده *</label>
+                        <input type="text" id="author-name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="author-email">ایمیل نویسنده</label>
+                        <input type="email" id="author-email" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="post-status">وضعیت انتشار</label>
+                    <select id="post-status" class="form-control">
+                        <option value="draft">پیش‌نویس</option>
+                        <option value="published">منتشر شده</option>
+                        <option value="archived">آرشیو شده</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>تصویر شاخص</label>
+                    <div class="image-upload" id="image-upload">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #6c757d; margin-bottom: 0.5rem;"></i>
+                        <p>تصویر را اینجا بکشید یا کلیک کنید</p>
+                        <input type="file" id="featured-image" accept="image/*" style="display: none;">
+                    </div>
+                    <img id="image-preview" class="image-preview" style="display: none;">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره مقاله
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-post">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="category-modal-title">افزودن دسته‌بندی جدید</h3>
+                <button class="modal-close" id="category-modal-close">&times;</button>
+            </div>
+            <form id="category-form">
+                <input type="hidden" id="category-id">
+                
+                <div class="form-group">
+                    <label for="category-name">نام دسته‌بندی *</label>
+                    <input type="text" id="category-name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category-description">توضیحات</label>
+                    <textarea id="category-description" class="form-control" placeholder="توضیحات دسته‌بندی..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="category-color">رنگ</label>
+                        <input type="color" id="category-color" class="form-control" value="#667eea">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-icon">آیکون</label>
+                        <input type="text" id="category-icon" class="form-control" placeholder="fas fa-folder">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره دسته‌بندی
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-category">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tag Modal -->
+    <div id="tag-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tag-modal-title">افزودن برچسب جدید</h3>
+                <button class="modal-close" id="tag-modal-close">&times;</button>
+            </div>
+            <form id="tag-form">
+                <input type="hidden" id="tag-id">
+                
+                <div class="form-group">
+                    <label for="tag-name">نام برچسب *</label>
+                    <input type="text" id="tag-name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tag-color">رنگ</label>
+                    <input type="color" id="tag-color" class="form-control" value="#6c757d">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> ذخیره برچسب
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-tag">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="logo-icon">⬢</div>
+                <div class="logo-text">N98N</div>
+            </div>
+            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

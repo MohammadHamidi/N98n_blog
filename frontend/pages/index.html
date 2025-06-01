@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بلاگ - N98N</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Updated logo styles for SVG */
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo-svg {
+            height: 40px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover .logo-svg {
+            transform: scale(1.05);
+        }
+
+        .footer-logo .logo-svg {
+            height: 35px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Remove old logo styles */
+        .logo-icon, .logo-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav-container">
+            <a href="https://n98n.ir" class="logo">
+  <img src="logo.svg" alt="N98N Logo" class="logo-img">
+</a>
+            <ul class="nav-menu">
+                <!-- <li><a href="#support">پشتیبانی</a></li>
+                <li><a href="#about">درباره ما</a></li>
+                <li><a href="#pricing">قیمت گذاری</a></li>
+                <li><a href="#services">خدمات</a></li>
+                <li><a href="#docs">مستندات</a></li> -->
+                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                <!-- <li><a href="admin.html" class="auth-btn">پنل مدیریت</a></li> -->
+            </ul>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>بلاگ تخصصی <span class="highlight">هوشمند</span> برای توسعه‌دهندگان ایرانی</h1>
+            <p>راهکارهای تخصصی اتوماسیون فرآیندهای کسب و کار با استفاده از پلتفرم N98N طراحی شده برای نیازهای خاص بازار ایران. با ما همراه شوید تا در مسیر تحول دیجیتال سازمان خود را به سطح بالاتری از کارایی و بهره‌وری برسانید.</p>
+            <a href="#posts" class="cta-button">مطالعه مقالات</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            <!-- Blog Posts -->
+            <section class="blog-posts" id="posts">
+                <h2 class="section-title">آخرین مقالات</h2>
+                
+                <!-- Posts will be loaded here dynamically -->
+                <div id="posts-container">
+                    <!-- Loading placeholder -->
+                    <div class="posts-loading">
+                        <div class="loading-spinner" style="margin: 2rem auto;"></div>
+                        <p style="text-align: center; color: #6c757d;">در حال بارگذاری مقالات...</p>
+                    </div>
+                </div>
+
+                <!-- No posts message -->
+                <div id="no-posts" style="display: none;">
+                    <div class="no-posts-message">
+                        <i class="fas fa-file-alt" style="font-size: 3rem; color: #6c757d; margin-bottom: 1rem;"></i>
+                        <h3>هیچ مقاله‌ای یافت نشد</h3>
+                        <p>در حال حاضر مقاله‌ای برای نمایش وجود ندارد.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Search Widget -->
+                <div class="sidebar-widget">
+                    <h4>جستجو در مقالات</h4>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="جستجو کنید..." id="search-input">
+                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+
+                <!-- Categories Widget -->
+                <div class="sidebar-widget">
+                    <h4>دسته‌بندی‌ها</h4>
+                    <ul class="category-list" id="categories-list">
+                        <li class="loading-item">در حال بارگذاری...</li>
+                    </ul>
+                </div>
+
+                <!-- Recent Posts Widget -->
+                <div class="sidebar-widget">
+                    <h4>مقالات پربازدید</h4>
+                    <ul class="recent-posts" id="featured-posts">
+                        <li class="loading-item">در حال بارگذاری...</li>
+                    </ul>
+                </div>
+
+                <!-- Tags Widget -->
+                <div class="sidebar-widget">
+                    <h4>برچسب‌های محبوب</h4>
+                    <div class="tags-cloud" id="tags-cloud">
+                        <span class="loading-item">در حال بارگذاری...</span>
+                    </div>
+                </div>
+
+                <!-- Clear Filters Button -->
+                <div class="sidebar-widget">
+                    <button class="cta-button" id="clear-filters" style="width: 100%; font-size: 0.9rem; padding: 0.5rem 1rem;">
+                        نمایش همه مقالات
+                    </button>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination-container" style="display: none;">
+            <!-- Pagination will be generated dynamically -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="logo.svg" alt="N98N Logo" class="logo-svg">
+            </div>
+            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/blog.js"></script>
+</body>
+</html>
