@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ورود ادمین</title>
+  <style>
+    body { background:#fff; display:flex; justify-content:center; align-items:center; height:100vh; font-family: sans-serif; }
+    form { text-align:center; }
+    input { display:block; margin:0.5rem 0; padding:0.5rem; width:250px; }
+    button { padding:0.5rem 1rem; }
+  </style>
+</head>
+<body>
+  <form id="login-form">
+    <input type="email" id="login-email" placeholder="ایمیل" required>
+    <input type="password" id="login-password" placeholder="رمز عبور" required>
+    <button type="submit">ورود</button>
+  </form>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/auth.js"></script>
+</body>
+</html>
