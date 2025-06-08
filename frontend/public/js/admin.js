@@ -11,7 +11,7 @@ class AdminPanel {
   async init() {
     try {
       if (!blogAPI.getToken()) {
-        window.location.href = 'login.html';
+        window.location.href = 'admin-login.html';
         return;
       }
       this.setupEventListeners();
@@ -809,7 +809,7 @@ class AdminPanel {
 
   logout() {
     blogAPI.removeToken();
-    window.location.href = 'login.html';
+    window.location.href = 'admin-login.html';
   }
 }
 
