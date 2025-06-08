@@ -86,7 +86,9 @@ app.use((err, req, res, next) => {
   });
 });
 const authRoutes = require('./routes/auth');
+const uploadsRoutes = require('./routes/uploads');
 app.use('/api/auth', authRoutes);            // new
+app.use('/api/uploads', uploadsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

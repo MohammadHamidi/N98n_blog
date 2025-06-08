@@ -347,7 +347,7 @@
                 <li><a href="#services">خدمات</a></li>
                 <li><a href="#docs">مستندات</a></li> -->
                 <li><a href="index.html" class="active">صفحه اصلی</a></li>
-                <!-- <li><a href="admin.html" class="auth-btn">پنل مدیریت</a></li> -->
+                <li><a href="#" id="logout-btn">خروج</a></li>
             </ul>
             <button class="mobile-menu-btn">
                 <i class="fas fa-bars"></i>
@@ -490,6 +490,8 @@
                 <div class="form-group">
                     <label for="post-content">محتوای مقاله *</label>
                     <textarea id="post-content" class="form-control content-editor" required placeholder="محتوای کامل مقاله..."></textarea>
+                    <button type="button" class="btn btn-success" id="insert-image-btn" style="margin-top:0.5rem;">افزودن تصویر در محتوا</button>
+                    <input type="file" id="content-image-file" accept="image/*" style="display:none;">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
