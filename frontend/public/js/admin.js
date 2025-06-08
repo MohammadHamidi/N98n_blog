@@ -10,6 +10,10 @@ class AdminPanel {
 
   async init() {
     try {
+      if (!blogAPI.getToken()) {
+        window.location.href = 'login.html';
+        return;
+      }
       this.setupEventListeners();
       await this.loadDashboard();
       console.log('✅ Admin panel initialized successfully!');
@@ -27,6 +31,14 @@ class AdminPanel {
         this.switchSection(section);
       });
     });
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.logout();
+      });
+    }
 
     // Post Management
     document.getElementById('add-post-btn').addEventListener('click', () => {
@@ -84,6 +96,7 @@ class AdminPanel {
 
     // Image Upload
     this.setupImageUpload();
+    this.setupContentImageInsert();
 
     // Modal Backdrop Close
     document.querySelectorAll('.modal').forEach(modal => {
@@ -141,6 +154,43 @@ class AdminPanel {
     };
     
     reader.readAsDataURL(file);
+  }
+
+  setupContentImageInsert() {
+    const btn = document.getElementById('insert-image-btn');
+    const fileInput = document.getElementById('content-image-file');
+    const textarea = document.getElementById('post-content');
+
+    if (!btn || !fileInput || !textarea) return;
+
+    btn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async (e) => {
+      if (!e.target.files.length) return;
+      const file = e.target.files[0];
+      try {
+        const res = await blogAPI.uploadImage(file);
+        if (res.success && res.url) {
+          this.insertAtCursor(textarea, `![](${res.url})\n`);
+          ErrorHandler.success('تصویر افزوده شد');
+        } else {
+          throw new Error(res.error || 'خطا در بارگذاری تصویر');
+        }
+      } catch (err) {
+        ErrorHandler.error(err.message);
+      }
+      fileInput.value = '';
+    });
+  }
+
+  insertAtCursor(el, text) {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = el.value.substring(0, start);
+    const after = el.value.substring(end);
+    el.value = before + text + after;
+    el.selectionStart = el.selectionEnd = start + text.length;
+    el.focus();
   }
 
   async switchSection(section) {
@@ -755,6 +805,11 @@ class AdminPanel {
     } finally {
       loadingManager.hide('delete-tag');
     }
+  }
+
+  logout() {
+    blogAPI.removeToken();
+    window.location.href = 'login.html';
   }
 }
 

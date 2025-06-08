@@ -1,23 +1,38 @@
 // Frontend API Client
 class BlogAPI {
   constructor() {
-    this.baseURL = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3000/api' 
+    this.baseURL = window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/api'
       : '/api';
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
   }
 
+  // Token management
+  setToken(token) {
+    localStorage.setItem('blog_token', token);
+  }
+
+  getToken() {
+    return localStorage.getItem('blog_token');
+  }
+
+  removeToken() {
+    localStorage.removeItem('blog_token');
+  }
+
   // Generic fetch method with error handling
   async fetch(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     try {
+      const defaultHeaders = options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+      const headers = { ...defaultHeaders, ...options.headers };
+      const token = this.getToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
+        headers,
         ...options
       });
 
@@ -233,10 +248,40 @@ class BlogAPI {
     const response = await this.fetch(`/tags/${id}`, {
       method: 'DELETE'
     });
-    
+
     // Clear tags cache
     this.cache.delete('tags');
     return response;
+  }
+
+  // Upload image for content
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    return await this.fetch('/uploads', {
+      method: 'POST',
+      body: formData,
+      headers: {}
+    });
+  }
+
+  // Authentication
+  async login(email, password) {
+    const res = await this.fetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    if (res.token) this.setToken(res.token);
+    return res;
+  }
+
+  async register(name, email, password) {
+    const res = await this.fetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password })
+    });
+    if (res.token) this.setToken(res.token);
+    return res;
   }
 
   // Utility methods
