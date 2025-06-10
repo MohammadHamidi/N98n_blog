@@ -48,4 +48,8 @@ class AuthForms {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => new AuthForms());
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new AuthForms());
+} else {
+  new AuthForms();
+}

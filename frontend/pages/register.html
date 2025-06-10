@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ثبت نام - N98N</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/napkin.css">
+  <link rel="stylesheet" href="css/auth.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <div class="main-container" style="max-width:400px;margin:5rem auto;">
-    <h2 style="text-align:center;margin-bottom:1rem;">ایجاد حساب</h2>
+<body class="auth-page">
+  <div class="auth-container">
+    <h2 class="auth-title">ایجاد حساب</h2>
     <form id="register-form">
       <div class="form-group">
         <label for="reg-name">نام</label>
@@ -22,9 +25,9 @@
         <label for="reg-password">رمز عبور</label>
         <input type="password" id="reg-password" class="form-control" required>
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">ثبت نام</button>
+      <button type="submit" class="btn-primary">ثبت نام</button>
     </form>
-    <p style="text-align:center;margin-top:1rem;">
+    <p class="auth-footer">
       قبلاً ثبت نام کرده‌اید؟ <a href="admin-login.html">ورود</a>
     </p>
   </div>
