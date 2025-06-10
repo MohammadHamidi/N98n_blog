@@ -7,205 +7,501 @@
     <meta name="description" id="page-description" content="">
     <meta name="keywords" id="page-keywords" content="">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/napkin.css">
     <link rel="stylesheet" href="css/style.css">
- <style>
-    body {
-      background: var(--gray-900);
-      color: var(--gray-50);
-      font-family: var(--font-family);
-      line-height: 1.7;
-    }
-    .post-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 3rem;
-    }
-    .post-content {
-      background: #1c2135;
-      color: #e4e6eb;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    .post-header {
-      padding: 2rem;
-      border-bottom: 1px solid #2e344e;
-    }
-    .post-title {
-      color: #ffffff;
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-    .post-meta {
-      display: flex;
-      gap: 1rem;
-      color: #9ca3af;
-      font-size: 0.9rem;
-      flex-wrap: wrap;
-    }
-    .post-meta span {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .post-featured-image {
-      width: 100%;
-      height: 300px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-    .post-body {
-      padding: 2rem;
-    }
-    .post-body h2,
-    .post-body h3,
-    .post-body h4 {
-      color: #ffffff;
-      margin: 2rem 0 1rem;
-      font-weight: 600;
-    }
-    .post-body p {
-      color: #d1d5db;
-      margin-bottom: 1.5rem;
-    }
-    .video-wrapper {
-      margin: 1.5rem 0;
-      position: relative;
-      padding-bottom: 56.25%;
-      height: 0;
-    }
-    .video-wrapper iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    .post-body code {
-      background: #2e344e;
-      color: #fcd34d;
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      font-family: monospace;
-    }
-    .post-body pre {
-      background: #111827;
-      color: #e5e7eb;
-      padding: 1.5rem;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 1.5rem 0;
-    }
-    .post-tags {
-      padding: 1.5rem 2rem;
-      border-top: 1px solid #2e344e;
-    }
-    .post-tags h4 {
-      margin-bottom: 1rem;
-      color: #f5f5f5;
-    }
-    .post-tag {
-      background: #2e344e;
-      color: #e5e7eb;
-      padding: 0.4rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      text-decoration: none;
-      transition: background 0.3s ease;
-    }
-    .post-tag:hover {
-      background: #6366f1;
-      color: white;
-    }
-    .related-posts {
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .related-posts h4 {
-      margin-bottom: 1.5rem;
-      color: #ffffff;
-    }
-    .related-post-item {
-      display: block;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid #374151;
-      color: #d1d5db;
-      text-decoration: none;
-    }
-    .related-post-item:last-child {
-      border-bottom: none;
-    }
-    .related-post-item:hover {
-      color: #6366f1;
-    }
-    .back-to-blog {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #8b5cf6;
-      text-decoration: none;
-      margin-bottom: 2rem;
-      font-weight: 500;
-    }
-    .back-to-blog:hover {
-      color: #a78bfa;
-    }
-    .sidebar-widget {
-      background: #1f2937;
-      border-radius: 16px;
-      padding: 1.5rem;
-      color: #d1d5db;
-      margin-bottom: 1.5rem;
-    }
-    .sidebar-widget h4 {
-      margin-bottom: 1rem;
-      color: #ffffff;
-    }
-    .tag {
-      display: inline-block;
-      font-size: 0.85rem;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      transition: all 0.3s ease;
-    }
-    .post-loading,
-    .post-error {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: #9ca3af;
-    }
-    .post-error {
-      color: #ef4444;
-    }
-    .logo-img {
-      height: 48px;
-      width: auto;
-      display: block;
-    }
-    @media (max-width: 768px) {
-      .post-container {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        padding: 1rem;
-      }
-      .post-title {
-        font-size: 1.8rem;
-      }
-      .post-meta {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Post-specific light theme styles */
+        :root {
+            --post-bg: #FFFFFF;
+            --post-card-bg: #FFFFFF;
+            --post-header-bg: #F9FAFB;
+            --post-border: #E5E7EB;
+            --post-text: #111827;
+            --post-text-secondary: #4B5563;
+            --post-text-muted: #6B7280;
+            --post-link: #8B5CF6;
+            --post-code-bg: #F3F4F6;
+            --post-code-text: #1F2937;
+            --post-quote-bg: #F0F9FF;
+            --post-quote-border: #3B82F6;
+        }
+
+        body {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.7;
+        }
+
+        .post-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 3rem;
+        }
+
+        .post-content {
+            background: var(--post-card-bg);
+            color: var(--post-text);
+            border-radius: var(--radius-2xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--post-border);
+        }
+
+        .post-header {
+            padding: 2rem;
+            background: var(--post-header-bg);
+            border-bottom: 1px solid var(--post-border);
+        }
+
+        .post-title {
+            color: var(--post-text);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+            letter-spacing: -0.025em;
+        }
+
+        .post-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--post-text-muted);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .post-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-secondary);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-lg);
+            font-weight: 500;
+        }
+
+        .post-meta i {
+            color: var(--primary-purple);
+        }
+
+        .post-featured-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin-top: 1.5rem;
+        }
+
+        .post-body {
+            padding: 2rem;
+        }
+
+        .post-body h2,
+        .post-body h3,
+        .post-body h4 {
+            color: var(--post-text);
+            margin: 2rem 0 1rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .post-body h2 {
+            font-size: 1.75rem;
+            border-bottom: 2px solid var(--gradient-purple);
+            padding-bottom: 0.5rem;
+        }
+
+        .post-body h3 {
+            font-size: 1.5rem;
+        }
+
+        .post-body h4 {
+            font-size: 1.25rem;
+        }
+
+        .post-body p {
+            color: var(--post-text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .post-body a {
+            color: var(--post-link);
+            text-decoration: underline;
+            transition: color 0.3s ease;
+        }
+
+        .post-body a:hover {
+            color: var(--primary-purple-dark);
+        }
+
+        .post-body ul,
+        .post-body ol {
+            margin: 1.5rem 0;
+            padding-right: 2rem;
+            color: var(--post-text-secondary);
+        }
+
+        .post-body li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+
+        .post-body blockquote {
+            background: var(--post-quote-bg);
+            border-right: 4px solid var(--post-quote-border);
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            font-style: italic;
+            color: var(--post-text-secondary);
+        }
+
+        .video-wrapper {
+            margin: 1.5rem 0;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .post-body code {
+            background: var(--post-code-bg);
+            color: var(--post-code-text);
+            padding: 0.2rem 0.4rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+
+        .post-body pre {
+            background: var(--post-code-bg);
+            color: var(--post-code-text);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .post-body pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .post-tags {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--post-border);
+            background: var(--post-header-bg);
+        }
+
+        .post-tags h4 {
+            margin-bottom: 1rem;
+            color: var(--post-text);
+            font-size: 1.1rem;
+        }
+
+        .post-tag {
+            background: var(--gradient-purple);
+            color: var(--primary-purple);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 0.25rem 0.5rem 0.25rem 0;
+            font-weight: 500;
+        }
+
+        .post-tag:hover {
+            background: var(--primary-purple);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .related-posts {
+            background: var(--post-card-bg);
+            border-radius: var(--radius-2xl);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--post-border);
+            box-shadow: var(--shadow);
+        }
+
+        .related-posts h4 {
+            margin-bottom: 1.5rem;
+            color: var(--post-text);
+            font-size: 1.2rem;
+        }
+
+        .related-post-item {
+            display: block;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--post-text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .related-post-item:last-child {
+            border-bottom: none;
+        }
+
+        .related-post-item:hover {
+            color: var(--post-link);
+            background: var(--bg-secondary);
+            margin: 0 -1rem;
+            padding: 1rem;
+            border-radius: var(--radius);
+        }
+
+        .related-post-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .related-post-meta {
+            font-size: 0.85rem;
+            color: var(--post-text-muted);
+        }
+
+        .back-to-blog {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--post-link);
+            text-decoration: none;
+            margin-bottom: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+        }
+
+        .back-to-blog:hover {
+            color: var(--primary-purple-dark);
+            background: var(--gradient-purple);
+            transform: translateX(5px);
+        }
+
+        .sidebar-widget {
+            background: var(--post-card-bg);
+            border-radius: var(--radius-2xl);
+            padding: 1.5rem;
+            color: var(--post-text-secondary);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--post-border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-widget:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar-widget h4 {
+            margin-bottom: 1rem;
+            color: var(--post-text);
+            font-size: 1.1rem;
+            position: relative;
+        }
+
+        .sidebar-widget h4::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            right: 0;
+            width: 30px;
+            height: 2px;
+            background: var(--primary-purple);
+            border-radius: 1px;
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            margin: 0.25rem 0.5rem 0.25rem 0;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+        }
+
+        .tag:hover {
+            background: var(--primary-purple);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .post-loading,
+        .post-error {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--post-text-muted);
+        }
+
+        .post-error {
+            color: var(--error);
+        }
+
+        .post-error i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--error);
+            opacity: 0.7;
+        }
+
+        .logo-img {
+            height: 48px;
+            width: auto;
+            display: block;
+        }
+
+        /* Share buttons */
+        .share-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .share-buttons .tag {
+            cursor: pointer;
+            border: none;
+            font-size: 0.85rem;
+        }
+
+        .share-buttons .tag:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Table of contents */
+        #toc-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #toc-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        #toc-list a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            padding: 0.25rem 0;
+            transition: color 0.3s ease;
+        }
+
+        #toc-list a:hover {
+            color: var(--primary-purple);
+        }
+
+        /* Reading progress */
+        #reading-progress {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .post-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 1rem;
+            }
+
+            .post-title {
+                font-size: 1.8rem;
+            }
+
+            .post-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .post-header,
+            .post-body {
+                padding: 1.5rem;
+            }
+
+            .back-to-blog {
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .post-container {
+                padding: 0.5rem;
+            }
+
+            .post-title {
+                font-size: 1.5rem;
+            }
+
+            .post-header,
+            .post-body {
+                padding: 1rem;
+            }
+
+            .sidebar-widget {
+                padding: 1rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar,
+            .back-to-blog,
+            .share-buttons {
+                display: none;
+            }
+
+            .post-container {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .post-content {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            body {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -216,19 +512,21 @@
     <!-- Header -->
     <header class="header">
         <nav class="nav-container">
-           <a href="https://n98n.ir" class="logo">
-  <img src="logo.svg" alt="N98N Logo" class="logo-img">
-</a>
+            <a href="https://n98n.ir" class="logo">
+                <div class="logo-icon">N</div>
+                <span class="logo-text">n98n</span>
+            </a>
             <ul class="nav-menu">
-             
                 <li><a href="index.html" class="active">صفحه اصلی</a></li>
-                         </ul>
+                <li><a href="#about">درباره ما</a></li>
+                <li><a href="#services">خدمات</a></li>
+                <li><a href="#contact">تماس با ما</a></li>
+            </ul>
             <button class="mobile-menu-btn">
                 <i class="fas fa-bars"></i>
             </button>
         </nav>
     </header>
-
 
     <!-- Main Content -->
     <div class="main-container">
@@ -248,7 +546,7 @@
 
                 <!-- Error State -->
                 <div id="post-error" class="post-error" style="display: none;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <i class="fas fa-exclamation-triangle"></i>
                     <h3>خطا در بارگذاری مقاله</h3>
                     <p id="error-message">مقاله مورد نظر یافت نشد یا در دسترس نیست.</p>
                     <a href="index.html" class="cta-button" style="margin-top: 1rem;">
@@ -282,17 +580,17 @@
                 <!-- Share Widget -->
                 <div class="sidebar-widget">
                     <h4>اشتراک‌گذاری</h4>
-                    <div class="share-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="#" id="share-telegram" class="tag" style="background: #0088cc; color: white;">
+                    <div class="share-buttons">
+                        <a href="#" id="share-telegram" class="tag" style="background: #0088cc; color: white; border: none;">
                             <i class="fab fa-telegram-plane"></i> تلگرام
                         </a>
-                        <a href="#" id="share-twitter" class="tag" style="background: #1da1f2; color: white;">
+                        <a href="#" id="share-twitter" class="tag" style="background: #1da1f2; color: white; border: none;">
                             <i class="fab fa-twitter"></i> توییتر
                         </a>
-                        <a href="#" id="share-linkedin" class="tag" style="background: #0077b5; color: white;">
+                        <a href="#" id="share-linkedin" class="tag" style="background: #0077b5; color: white; border: none;">
                             <i class="fab fa-linkedin"></i> لینکدین
                         </a>
-                        <button id="copy-link" class="tag" style="background: #6c757d; color: white; border: none; cursor: pointer;">
+                        <button id="copy-link" class="tag" style="background: var(--text-muted); color: white; border: none; cursor: pointer;">
                             <i class="fas fa-link"></i> کپی لینک
                         </button>
                     </div>
@@ -307,12 +605,25 @@
                 <!-- Reading Progress -->
                 <div class="sidebar-widget">
                     <h4>پیشرفت مطالعه</h4>
-                    <div style="background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div id="reading-progress" style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 0%; transition: width 0.3s ease;"></div>
+                    <div style="background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem;">
+                        <div id="reading-progress"></div>
                     </div>
-                    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #6c757d;">
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
                         <span id="reading-percentage">0</span>% مطالعه شده
                     </p>
+                </div>
+
+                <!-- Newsletter -->
+                <div class="sidebar-widget" style="background: var(--gradient-purple); border-color: var(--primary-purple);">
+                    <h4 style="color: var(--primary-purple);">عضویت در خبرنامه</h4>
+                    <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+                        آخرین مقالات را مستقیماً در ایمیل دریافت کنید
+                    </p>
+                    <input type="email" class="form-control" placeholder="ایمیل شما" style="margin-bottom: var(--space-3);">
+                    <button class="btn-primary" style="width: 100%; font-size: var(--text-sm);">
+                        <i class="fas fa-envelope"></i>
+                        عضویت
+                    </button>
                 </div>
             </aside>
         </div>
@@ -322,10 +633,10 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-logo">
-                <div class="logo-icon">⬢</div>
-                <div class="logo-text">N98N</div>
+                <div class="logo-icon">N</div>
+                <div class="logo-text">n98n</div>
             </div>
-            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+            <p>&copy; ۱۴۰۳ n98n. تمامی حقوق محفوظ است.</p>
         </div>
     </footer>
 
@@ -362,14 +673,21 @@
 
             async loadPost() {
                 try {
-                    loadingManager.show('post-detail');
+                    this.showLoading();
                     
-                    const response = await blogAPI.getPost(this.postSlug);
+                    // Simulate API call
+                    const response = await fetch(`/api/posts/${this.postSlug}`);
                     
-                    if (response.success) {
-                        this.post = response.data.post;
+                    if (!response.ok) {
+                        throw new Error('Post not found');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.post = data.data.post;
                         this.renderPost();
-                        this.renderRelatedPosts(response.data.relatedPosts);
+                        this.renderRelatedPosts(data.data.relatedPosts);
                         this.updateSEO();
                         this.generateTableOfContents();
                     } else {
@@ -380,15 +698,27 @@
                     console.error('Error loading post:', error);
                     this.showError(error.message);
                 } finally {
-                    loadingManager.hide('post-detail');
+                    this.hideLoading();
                 }
             }
 
-            renderPost() {
+            showLoading() {
                 const loadingDiv = document.getElementById('post-loading');
                 const contentDiv = document.getElementById('post-content');
+                const errorDiv = document.getElementById('post-error');
                 
+                loadingDiv.style.display = 'block';
+                contentDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+            }
+
+            hideLoading() {
+                const loadingDiv = document.getElementById('post-loading');
                 loadingDiv.style.display = 'none';
+            }
+
+            renderPost() {
+                const contentDiv = document.getElementById('post-content');
                 contentDiv.style.display = 'block';
 
                 // Title
@@ -396,7 +726,7 @@
 
                 // Meta information
                 const metaHTML = `
-                    <span><i class="fas fa-calendar-alt"></i> ${blogAPI.formatPersianDate(this.post.publishedAt)}</span>
+                    <span><i class="fas fa-calendar-alt"></i> ${this.formatDate(this.post.publishedAt)}</span>
                     <span><i class="fas fa-user"></i> ${this.post.author.name}</span>
                     <span><i class="fas fa-eye"></i> ${this.post.views || 0} بازدید</span>
                     ${this.post.readingTime ? `<span><i class="fas fa-clock"></i> ${this.post.readingTime} دقیقه</span>` : ''}
@@ -414,7 +744,7 @@
                     `;
                 }
 
-                // Content rendered from Markdown
+                // Content
                 const rawHtml = marked.parse(this.post.content || '');
                 document.getElementById('post-body').innerHTML = this.processMedia(rawHtml);
 
@@ -442,9 +772,9 @@
                 
                 listContainer.innerHTML = relatedPosts.map(post => `
                     <a href="post.html?slug=${post.slug}" class="related-post-item">
-                        <div class="related-post-title">${blogAPI.truncateText(post.title, 60)}</div>
+                        <div class="related-post-title">${this.truncateText(post.title, 60)}</div>
                         <div class="related-post-meta">
-                            ${blogAPI.formatPersianDate(post.publishedAt)} • ${post.views || 0} بازدید
+                            ${this.formatDate(post.publishedAt)} • ${post.views || 0} بازدید
                         </div>
                     </a>
                 `).join('');
@@ -474,7 +804,7 @@
                 const tocContainer = document.getElementById('table-of-contents');
                 const tocList = document.getElementById('toc-list');
                 
-                let tocHTML = '<ul style="list-style: none; padding: 0;">';
+                let tocHTML = '<ul>';
                 
                 headings.forEach((heading, index) => {
                     const id = `heading-${index}`;
@@ -484,10 +814,8 @@
                     const indent = level * 15;
                     
                     tocHTML += `
-                        <li style="margin-left: ${indent}px; margin-bottom: 0.5rem;">
-                            <a href="#${id}" style="color: #495057; text-decoration: none; font-size: 0.9rem;">
-                                ${heading.textContent}
-                            </a>
+                        <li style="margin-right: ${indent}px; margin-bottom: 0.5rem;">
+                            <a href="#${id}">${heading.textContent}</a>
                         </li>
                     `;
                 });
@@ -516,9 +844,9 @@
                         return `<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/${yt[1]}" frameborder="0" allowfullscreen></iframe></div>`;
                     }
                     if (/\.(mp4|webm|ogg)$/i.test(url)) {
-                        return `<video controls src="${url}" style="max-width:100%"></video>`;
+                        return `<video controls src="${url}" style="max-width:100%; border-radius: var(--radius);"></video>`;
                     }
-                    return `<a href="${url}">${url}</a>`;
+                    return `<a href="${url}" target="_blank">${url}</a>`;
                 });
             }
 
@@ -542,9 +870,9 @@
                 document.getElementById('copy-link').addEventListener('click', async () => {
                     try {
                         await navigator.clipboard.writeText(currentURL);
-                        ErrorHandler.success('لینک کپی شد');
+                        this.showNotification('لینک کپی شد', 'success');
                     } catch (error) {
-                        ErrorHandler.error('خطا در کپی کردن لینک');
+                        this.showNotification('خطا در کپی کردن لینک', 'error');
                     }
                 });
             }
@@ -572,7 +900,7 @@
             }
 
             setupEventListeners() {
-                // Mobile menu
+                // Mobile menu functionality
                 const mobileBtn = document.querySelector('.mobile-menu-btn');
                 const navMenu = document.querySelector('.nav-menu');
                 
@@ -589,14 +917,12 @@
                 }
 
                 // Header scroll effect
+                const header = document.querySelector('.header');
                 window.addEventListener('scroll', () => {
-                    const header = document.querySelector('.header');
                     if (window.scrollY > 50) {
-                        header.style.background = 'rgba(44, 44, 84, 0.95)';
-                        header.style.backdropFilter = 'blur(10px)';
+                        header.classList.add('scrolled');
                     } else {
-                        header.style.background = '#2c2c54';
-                        header.style.backdropFilter = 'none';
+                        header.classList.remove('scrolled');
                     }
                 });
             }
@@ -610,12 +936,66 @@
                 errorDiv.style.display = 'block';
                 messageDiv.textContent = message;
             }
+
+            formatDate(dateString) {
+                // Simple Persian date formatting
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fa-IR');
+            }
+
+            truncateText(text, maxLength) {
+                if (text.length <= maxLength) return text;
+                return text.substr(0, maxLength) + '...';
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type === 'error' ? 'notification-error' : ''}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 20px;
+                    background: ${type === 'error' ? 'rgba(239, 68, 68, 0.95)' : 'rgba(16, 185, 129, 0.95)'};
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: var(--radius-xl);
+                    box-shadow: var(--shadow-xl);
+                    z-index: 10000;
+                    animation: slideIn 0.3s ease;
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            notification.parentNode.removeChild(notification);
+                        }, 300);
+                    }
+                }, 3000);
+            }
         }
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             new PostDetail();
         });
+
+        // Add slide animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(-100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(-100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

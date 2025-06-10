@@ -3,31 +3,717 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ورود - N98N</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/napkin.css">
-  <link rel="stylesheet" href="css/auth.css">
-  <link rel="stylesheet" href="css/style.css">
+  <title>ورود ادمین - n98n</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* n98n Brand Colors - Light Theme */
+      --primary-purple: #8B5CF6;
+      --primary-purple-light: #A78BFA;
+      --primary-purple-dark: #7C3AED;
+      --accent-orange: #F59E0B;
+      
+      /* Light Theme Colors */
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F9FAFB;
+      --bg-card: #FFFFFF;
+      --bg-gradient: linear-gradient(135deg, #EBF8FF 0%, #DBEAFE 100%);
+      
+      /* Text Colors */
+      --text-primary: #111827;
+      --text-secondary: #4B5563;
+      --text-muted: #6B7280;
+      
+      /* Form Colors */
+      --input-bg: #F9FAFB;
+      --input-border: #D1D5DB;
+      --input-border-focus: #8B5CF6;
+      --input-text: #111827;
+      
+      /* Status Colors */
+      --success: #10B981;
+      --error: #EF4444;
+      --warning: #F59E0B;
+      
+      /* Spacing */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      
+      /* Typography */
+      --font-family: 'Vazirmatn', sans-serif;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.25rem;
+      --text-2xl: 1.5rem;
+      --text-3xl: 1.875rem;
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      
+      /* Border Radius */
+      --radius: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --radius-2xl: 1.5rem;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Background Animation */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+      z-index: -1;
+    }
+    
+    .auth-container {
+      background: var(--bg-card);
+      border: 1px solid rgba(139, 92, 246, 0.1);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-10);
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-xl);
+      position: relative;
+      z-index: 1;
+      backdrop-filter: blur(10px);
+    }
+    
+    .auth-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+      border-radius: var(--radius-2xl);
+      z-index: -1;
+    }
+    
+    .brand-header {
+      text-align: center;
+      margin-bottom: var(--space-8);
+    }
+    
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      color: white;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    
+    .auth-title {
+      font-size: var(--text-3xl);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .auth-subtitle {
+      font-size: var(--text-base);
+      color: var(--text-secondary);
+    }
+    
+    .form-group {
+      margin-bottom: var(--space-6);
+    }
+    
+    .form-label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: var(--space-4);
+      font-size: var(--text-base);
+      font-family: var(--font-family);
+      background: var(--input-bg);
+      border: 2px solid var(--input-border);
+      border-radius: var(--radius);
+      color: var(--input-text);
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    
+    .form-control::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .form-control:focus {
+      border-color: var(--input-border-focus);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+      transform: translateY(-1px);
+      background: var(--bg-card);
+    }
+    
+    .form-control:invalid {
+      border-color: var(--error);
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: var(--space-4) var(--space-6);
+      font-size: var(--text-base);
+      font-weight: 600;
+      font-family: var(--font-family);
+      background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    }
+    
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-primary:disabled:hover {
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    
+    /* Loading State */
+    .btn-primary.loading {
+      color: transparent;
+    }
+    
+    .btn-primary.loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Error Message */
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-4);
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Success Message */
+    .success-message {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-4);
+      display: none;
+    }
+    
+    .success-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    /* Forgot Password Link */
+    .forgot-password {
+      text-align: center;
+      margin-top: var(--space-6);
+    }
+    
+    .forgot-password a {
+      color: var(--primary-purple-light);
+      text-decoration: none;
+      font-size: var(--text-sm);
+      transition: color 0.3s ease;
+    }
+    
+    .forgot-password a:hover {
+      color: var(--primary-purple);
+      text-decoration: underline;
+    }
+    
+    /* Additional Features */
+    .login-features {
+      text-align: center;
+      margin-top: var(--space-8);
+      padding-top: var(--space-6);
+      border-top: 1px solid rgba(139, 92, 246, 0.1);
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+    }
+    
+    .feature-item i {
+      color: var(--primary-purple);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      body {
+        padding: var(--space-2);
+      }
+      
+      .auth-container {
+        padding: var(--space-8) var(--space-6);
+      }
+      
+      .auth-title {
+        font-size: var(--text-2xl);
+      }
+      
+      .brand-logo {
+        width: 50px;
+        height: 50px;
+        font-size: var(--text-xl);
+      }
+    }
+    
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* Focus visible for keyboard navigation */
+    .form-control:focus-visible,
+    .btn-primary:focus-visible {
+      outline: 2px solid var(--primary-purple);
+      outline-offset: 2px;
+    }
+    
+    /* High contrast support */
+    @media (prefers-contrast: high) {
+      .auth-container {
+        border: 2px solid var(--primary-purple);
+      }
+      
+      .form-control {
+        border-width: 2px;
+      }
+      
+      .btn-primary {
+        border: 2px solid var(--primary-purple-dark);
+      }
+    }
+  </style>
 </head>
-<body class="auth-page">
+<body>
   <div class="auth-container">
-    <h2 class="auth-title">ورود به حساب</h2>
-    <form id="login-form">
+    <div class="brand-header">
+      <div class="brand-logo">N</div>
+      <h1 class="auth-title">ورود ادمین</h1>
+      <p class="auth-subtitle">به پنل مدیریت n98n خوش آمدید</p>
+    </div>
+    
+    <div class="error-message" id="error-message" role="alert"></div>
+    <div class="success-message" id="success-message" role="alert"></div>
+    
+    <form id="login-form" novalidate>
       <div class="form-group">
-        <label for="login-email">ایمیل</label>
-        <input type="email" id="login-email" class="form-control" required>
+        <label for="login-email" class="form-label">ایمیل</label>
+        <input 
+          type="email" 
+          id="login-email" 
+          name="email"
+          class="form-control" 
+          placeholder="admin@n98n.com"
+          required 
+          autocomplete="email"
+          aria-describedby="email-error"
+        >
       </div>
+      
       <div class="form-group">
-        <label for="login-password">رمز عبور</label>
-        <input type="password" id="login-password" class="form-control" required>
+        <label for="login-password" class="form-label">رمز عبور</label>
+        <input 
+          type="password" 
+          id="login-password" 
+          name="password"
+          class="form-control" 
+          placeholder="رمز عبور خود را وارد کنید"
+          required 
+          autocomplete="current-password"
+          aria-describedby="password-error"
+        >
       </div>
-      <button type="submit" class="btn-primary">ورود</button>
+      
+      <button type="submit" class="btn-primary" id="login-btn">
+        ورود به پنل
+      </button>
     </form>
-    <p class="auth-footer">
-      حساب ندارید؟ <a href="register.html">ثبت نام</a>
-    </p>
+    
+    <div class="forgot-password">
+      <a href="#" id="forgot-password-link">رمز عبور را فراموش کرده‌اید؟</a>
+    </div>
+    
+    <div class="login-features">
+      <div class="feature-item">
+        <i class="fas fa-shield-alt"></i>
+        <span>ورود امن و رمزگذاری شده</span>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-clock"></i>
+        <span>دسترسی ۲۴/۷ به پنل مدیریت</span>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-mobile-alt"></i>
+        <span>سازگار با تمام دستگاه‌ها</span>
+      </div>
+    </div>
   </div>
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
+
+  <script>
+    // DOM Elements
+    const loginForm = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    
+    // Show error message
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      successMessage.classList.remove('show');
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+      successMessage.textContent = message;
+      successMessage.classList.add('show');
+      errorMessage.classList.remove('show');
+    }
+    
+    // Hide messages
+    function hideMessages() {
+      errorMessage.classList.remove('show');
+      successMessage.classList.remove('show');
+    }
+    
+    // Set loading state
+    function setLoading(loading) {
+      if (loading) {
+        loginBtn.classList.add('loading');
+        loginBtn.disabled = true;
+      } else {
+        loginBtn.classList.remove('loading');
+        loginBtn.disabled = false;
+      }
+    }
+    
+    // Validate email
+    function validateEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+    
+    // Form submission handler
+    loginForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      hideMessages();
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Client-side validation
+      if (!email) {
+        showError('لطفا ایمیل خود را وارد کنید');
+        emailInput.focus();
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        showError('لطفا یک ایمیل معتبر وارد کنید');
+        emailInput.focus();
+        return;
+      }
+      
+      if (!password) {
+        showError('لطفا رمز عبور خود را وارد کنید');
+        passwordInput.focus();
+        return;
+      }
+      
+      if (password.length < 6) {
+        showError('رمز عبور باید حداقل ۶ کاراکتر باشد');
+        passwordInput.focus();
+        return;
+      }
+      
+      setLoading(true);
+      
+      try {
+        // Simulate API call
+        const response = await fetch('/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        if (!response.ok) {
+          throw new Error('خطا در اتصال به سرور');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showSuccess('ورود موفقیت‌آمیز بود. در حال انتقال...');
+          
+          // Store token if provided
+          if (data.token) {
+            localStorage.setItem('admin_token', data.token);
+          }
+          
+          // Redirect after 1.5 seconds
+          setTimeout(() => {
+            window.location.href = data.redirect || '/admin/dashboard';
+          }, 1500);
+          
+        } else {
+          throw new Error(data.message || 'خطا در ورود');
+        }
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        // Handle different error types
+        if (error.name === 'TypeError') {
+          showError('خطا در اتصال به سرور. لطفا دوباره تلاش کنید');
+        } else {
+          showError(error.message || 'خطای غیرمنتظره‌ای رخ داد');
+        }
+      } finally {
+        setLoading(false);
+      }
+    });
+    
+    // Real-time validation
+    emailInput.addEventListener('blur', function() {
+      const email = this.value.trim();
+      if (email && !validateEmail(email)) {
+        this.style.borderColor = 'var(--error)';
+      } else {
+        this.style.borderColor = '';
+      }
+    });
+    
+    emailInput.addEventListener('input', function() {
+      this.style.borderColor = '';
+      hideMessages();
+    });
+    
+    passwordInput.addEventListener('input', function() {
+      this.style.borderColor = '';
+      hideMessages();
+    });
+    
+    // Forgot password handler
+    document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      showError('قابلیت بازیابی رمز عبور به زودی فعال می‌شود');
+    });
+    
+    // Auto-focus first input
+    emailInput.focus();
+    
+    // Handle Enter key navigation
+    emailInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        passwordInput.focus();
+      }
+    });
+    
+    // Check for existing token on page load
+    if (localStorage.getItem('admin_token')) {
+      // Optionally redirect if already logged in
+      // window.location.href = '/admin/dashboard';
+    }
+    
+    // Add some interactive enhancements
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add ripple effect to button
+      loginBtn.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.classList.add('ripple');
+        
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+      
+      // Add floating label effect
+      document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('focus', function() {
+          this.parentNode.classList.add('focused');
+        });
+        
+        input.addEventListener('blur', function() {
+          if (!this.value) {
+            this.parentNode.classList.remove('focused');
+          }
+        });
+        
+        // Check if input has value on load
+        if (input.value) {
+          input.parentNode.classList.add('focused');
+        }
+      });
+    });
+  </script>
+  
+  <style>
+    /* Additional ripple effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: ripple-animation 0.6s linear;
+      pointer-events: none;
+    }
+    
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    
+    /* Floating label effect */
+    .form-group.focused .form-label {
+      color: var(--primary-purple);
+      transform: translateY(-2px);
+    }
+  </style>
 </body>
 </html>

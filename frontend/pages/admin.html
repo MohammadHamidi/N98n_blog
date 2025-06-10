@@ -5,24 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پنل مدیریت - N98N</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/napkin.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
+        /* Admin Panel Light Theme Styles */
+        :root {
+            --admin-bg: #F9FAFB;
+            --admin-sidebar-bg: #FFFFFF;
+            --admin-content-bg: #FFFFFF;
+            --admin-border: #E5E7EB;
+            --admin-text: #111827;
+            --admin-text-secondary: #4B5563;
+            --admin-text-muted: #6B7280;
+            --admin-hover: #F3F4F6;
+            --admin-accent: #8B5CF6;
+            --admin-success: #10B981;
+            --admin-warning: #F59E0B;
+            --admin-error: #EF4444;
+        }
+
+        body {
+            background: var(--admin-bg);
+            color: var(--admin-text);
+            font-family: var(--font-family);
+        }
+
         .admin-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
-            background: #f8f9fa;
+            background: var(--admin-bg);
             min-height: calc(100vh - 200px);
         }
 
         .admin-header {
-            background: #ffffff;
-            border-radius: 16px;
+            background: var(--admin-content-bg);
+            border-radius: var(--radius-2xl);
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--admin-border);
+        }
+
+        .admin-header h1 {
+            color: var(--admin-text);
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .admin-header p {
+            color: var(--admin-text-secondary);
+            font-size: var(--text-lg);
+            margin: 0;
         }
 
         .admin-nav {
@@ -30,33 +67,47 @@
             gap: 1rem;
             margin-bottom: 2rem;
             flex-wrap: wrap;
+            background: var(--admin-content-bg);
+            padding: 1.5rem;
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--admin-border);
         }
 
         .admin-nav button {
             padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: #e9ecef;
-            color: #495057;
+            border: 1px solid var(--admin-border);
+            border-radius: var(--radius-lg);
+            background: var(--admin-bg);
+            color: var(--admin-text-secondary);
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
+            font-family: var(--font-family);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .admin-nav button.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--admin-accent) 0%, var(--primary-purple-dark) 100%);
             color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
         }
 
         .admin-nav button:hover:not(.active) {
-            background: #dee2e6;
+            background: var(--admin-hover);
+            border-color: var(--admin-accent);
+            transform: translateY(-1px);
         }
 
         .admin-content {
-            background: #ffffff;
-            border-radius: 16px;
+            background: var(--admin-content-bg);
+            border-radius: var(--radius-2xl);
             padding: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--admin-border);
         }
 
         .admin-section {
@@ -75,22 +126,54 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--admin-accent) 0%, var(--primary-purple-dark) 100%);
             color: #ffffff;
-            padding: 1.5rem;
-            border-radius: 12px;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
             text-align: center;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
         }
 
         .stat-card h3 {
             margin: 0 0 0.5rem;
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         .stat-card p {
             margin: 0;
             opacity: 0.9;
+            font-size: var(--text-base);
+            font-weight: 500;
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            opacity: 0.7;
+            margin-bottom: 1rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--admin-border);
+        }
+
+        .section-header h2 {
+            color: var(--admin-text);
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            margin: 0;
         }
 
         .form-group {
@@ -100,23 +183,28 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #2c2c54;
+            color: var(--admin-text);
             font-weight: 500;
+            font-size: var(--text-sm);
         }
 
         .form-control {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            transition: border-color 0.3s ease;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--admin-border);
+            border-radius: var(--radius);
+            font-size: var(--text-base);
+            background: var(--admin-bg);
+            color: var(--admin-text);
+            transition: all 0.3s ease;
+            font-family: var(--font-family);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--admin-accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: var(--admin-content-bg);
         }
 
         textarea.form-control {
@@ -126,65 +214,96 @@
 
         .content-editor {
             min-height: 300px;
+            font-family: 'Monaco', 'Menlo', monospace;
         }
 
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius);
             cursor: pointer;
             font-weight: 500;
+            font-family: var(--font-family);
             transition: all 0.3s ease;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: var(--text-base);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--admin-accent) 0%, var(--primary-purple-dark) 100%);
             color: #ffffff;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
         }
 
         .btn-secondary {
-            background: #6c757d;
-            color: #ffffff;
+            background: var(--admin-bg);
+            color: var(--admin-text);
+            border: 2px solid var(--admin-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--admin-hover);
+            border-color: var(--admin-accent);
         }
 
         .btn-danger {
-            background: #dc3545;
+            background: var(--admin-error);
             color: #ffffff;
         }
 
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
         .btn-success {
-            background: #28a745;
+            background: var(--admin-success);
             color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
         }
 
         .posts-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
+            background: var(--admin-content-bg);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
 
         .posts-table th,
         .posts-table td {
             padding: 1rem;
             text-align: right;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--admin-border);
         }
 
         .posts-table th {
-            background: #f8f9fa;
+            background: var(--admin-bg);
             font-weight: 600;
-            color: #2c2c54;
+            color: var(--admin-text);
+            font-size: var(--text-sm);
         }
 
         .posts-table tr:hover {
-            background: #f8f9fa;
+            background: var(--admin-hover);
+        }
+
+        .posts-table tr:last-child td {
+            border-bottom: none;
         }
 
         .status-badge {
@@ -195,44 +314,46 @@
         }
 
         .status-published {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--admin-success);
         }
 
         .status-draft {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--admin-warning);
         }
 
         .status-archived {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--admin-error);
         }
 
         .image-upload {
-            border: 2px dashed #e9ecef;
-            border-radius: 8px;
+            border: 2px dashed var(--admin-border);
+            border-radius: var(--radius);
             padding: 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            background: var(--admin-bg);
         }
 
         .image-upload:hover {
-            border-color: #667eea;
-            background: #f8f9fa;
+            border-color: var(--admin-accent);
+            background: rgba(139, 92, 246, 0.05);
         }
 
         .image-upload.dragover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: var(--admin-accent);
+            background: rgba(139, 92, 246, 0.1);
         }
 
         .image-preview {
             max-width: 200px;
             max-height: 150px;
-            border-radius: 8px;
+            border-radius: var(--radius);
             margin-top: 1rem;
+            box-shadow: var(--shadow-sm);
         }
 
         .tag-input {
@@ -240,13 +361,14 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             padding: 0.5rem;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            border: 2px solid var(--admin-border);
+            border-radius: var(--radius);
             min-height: 45px;
+            background: var(--admin-bg);
         }
 
         .tag-item {
-            background: #667eea;
+            background: var(--admin-accent);
             color: #ffffff;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -262,6 +384,11 @@
             color: #ffffff;
             cursor: pointer;
             font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
         }
 
         .modal {
@@ -275,6 +402,7 @@
             z-index: 10000;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(5px);
         }
 
         .modal.active {
@@ -282,13 +410,15 @@
         }
 
         .modal-content {
-            background: #ffffff;
-            border-radius: 16px;
+            background: var(--admin-content-bg);
+            border-radius: var(--radius-2xl);
             padding: 2rem;
             max-width: 800px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--admin-border);
         }
 
         .modal-header {
@@ -296,6 +426,14 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--admin-border);
+        }
+
+        .modal-header h3 {
+            color: var(--admin-text);
+            margin: 0;
+            font-size: var(--text-xl);
         }
 
         .modal-close {
@@ -303,10 +441,83 @@
             border: none;
             font-size: 1.5rem;
             cursor: pointer;
-            color: #6c757d;
+            color: var(--admin-text-muted);
+            padding: 0.5rem;
+            border-radius: var(--radius);
+            transition: all 0.3s ease;
         }
 
-        @media (max-width: 768px) {
+        .modal-close:hover {
+            background: var(--admin-hover);
+            color: var(--admin-error);
+        }
+
+        /* Categories and Tags Lists */
+        .categories-list,
+        .tags-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .category-card,
+        .tag-card {
+            background: var(--admin-content-bg);
+            border: 1px solid var(--admin-border);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .category-card:hover,
+        .tag-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--admin-accent);
+        }
+
+        .category-card h4,
+        .tag-card h4 {
+            color: var(--admin-text);
+            margin-bottom: 0.5rem;
+            font-size: var(--text-lg);
+        }
+
+        .category-card p,
+        .tag-card p {
+            color: var(--admin-text-secondary);
+            margin-bottom: 1rem;
+            font-size: var(--text-sm);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .card-actions .btn {
+            padding: 0.5rem 1rem;
+            font-size: var(--text-sm);
+        }
+
+        /* Loading States */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--admin-border);
+            border-top: 4px solid var(--admin-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
             .admin-container {
                 padding: 1rem;
             }
@@ -316,9 +527,11 @@
             }
 
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             }
+        }
 
+        @media (max-width: 768px) {
             .posts-table {
                 font-size: 0.8rem;
             }
@@ -327,6 +540,51 @@
             .posts-table td {
                 padding: 0.5rem;
             }
+
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--admin-content-bg);
+            border: 1px solid var(--admin-border);
+            border-radius: var(--radius-xl);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            z-index: 10001;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-color: var(--admin-success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .toast.error {
+            border-color: var(--admin-error);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .toast.warning {
+            border-color: var(--admin-warning);
+            background: rgba(245, 158, 11, 0.05);
         }
     </style>
 </head>
@@ -336,19 +594,16 @@
         <div class="loading-spinner"></div>
     </div>
 
-   <!-- Header -->
+    <!-- Header -->
     <header class="header">
         <nav class="nav-container">
             <a href="https://n98n.ir" class="logo">
-                <img src="logo.svg" alt="N98N Logo" class="logo-svg">
+                <div class="logo-icon">N</div>
+                <span class="logo-text">n98n</span>
             </a>
             <ul class="nav-menu">
-                <!-- <li><a href="#support">پشتیبانی</a></li>
-                <li><a href="#about">درباره ما</a></li>
-                <li><a href="#pricing">قیمت گذاری</a></li>
-                <li><a href="#services">خدمات</a></li>
-                <li><a href="#docs">مستندات</a></li> -->
-                <li><a href="index.html" class="active">صفحه اصلی</a></li>
+                <li><a href="index.html">صفحه اصلی</a></li>
+                <li><a href="#" class="active">پنل مدیریت</a></li>
                 <li><a href="#" id="logout-btn">خروج</a></li>
             </ul>
             <button class="mobile-menu-btn">
@@ -361,23 +616,35 @@
     <div class="admin-container">
         <!-- Admin Header -->
         <div class="admin-header">
-            <h1>پنل مدیریت بلاگ</h1>
-            <p>مدیریت مقالات، دسته‌بندی‌ها و برچسب‌های بلاگ N98N</p>
+            <h1>پنل مدیریت بلاگ N98N</h1>
+            <p>مدیریت کامل مقالات، دسته‌بندی‌ها و برچسب‌های بلاگ تخصصی</p>
         </div>
 
         <!-- Admin Navigation -->
         <div class="admin-nav">
             <button class="admin-nav-btn active" data-section="dashboard">
-                <i class="fas fa-tachometer-alt"></i> داشبورد
+                <i class="fas fa-tachometer-alt"></i>
+                داشبورد
             </button>
             <button class="admin-nav-btn" data-section="posts">
-                <i class="fas fa-file-alt"></i> مقالات
+                <i class="fas fa-file-alt"></i>
+                مقالات
             </button>
             <button class="admin-nav-btn" data-section="categories">
-                <i class="fas fa-folder"></i> دسته‌بندی‌ها
+                <i class="fas fa-folder"></i>
+                دسته‌بندی‌ها
             </button>
             <button class="admin-nav-btn" data-section="tags">
-                <i class="fas fa-tags"></i> برچسب‌ها
+                <i class="fas fa-tags"></i>
+                برچسب‌ها
+            </button>
+            <button class="admin-nav-btn" data-section="analytics">
+                <i class="fas fa-chart-bar"></i>
+                آمار و گزارشات
+            </button>
+            <button class="admin-nav-btn" data-section="settings">
+                <i class="fas fa-cog"></i>
+                تنظیمات
             </button>
         </div>
 
@@ -385,33 +652,66 @@
         <div class="admin-content">
             <!-- Dashboard Section -->
             <div id="dashboard" class="admin-section active">
-                <h2>آمار کلی</h2>
+                <div class="section-header">
+                    <h2>آمار کلی سیستم</h2>
+                    <span style="color: var(--admin-text-muted); font-size: var(--text-sm);">
+                        آخرین بروزرسانی: همین الان
+                    </span>
+                </div>
+                
                 <div class="stats-grid" id="stats-grid">
                     <div class="stat-card">
+                        <i class="fas fa-file-alt"></i>
                         <h3 id="total-posts">-</h3>
                         <p>کل مقالات</p>
                     </div>
                     <div class="stat-card">
+                        <i class="fas fa-eye"></i>
                         <h3 id="published-posts">-</h3>
                         <p>مقالات منتشر شده</p>
                     </div>
                     <div class="stat-card">
+                        <i class="fas fa-edit"></i>
                         <h3 id="draft-posts">-</h3>
                         <p>پیش‌نویس‌ها</p>
                     </div>
                     <div class="stat-card">
+                        <i class="fas fa-chart-line"></i>
                         <h3 id="total-views">-</h3>
                         <p>کل بازدیدها</p>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div style="margin-top: 2rem;">
+                    <h3 style="color: var(--admin-text); margin-bottom: 1rem;">فعالیت‌های اخیر</h3>
+                    <div style="background: var(--admin-bg); border-radius: var(--radius-xl); padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--admin-border);">
+                            <i class="fas fa-plus-circle" style="color: var(--admin-success);"></i>
+                            <span>مقاله جدید "راهنمای کامل SEO" اضافه شد</span>
+                            <span style="margin-right: auto; color: var(--admin-text-muted); font-size: var(--text-sm);">۲ دقیقه پیش</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--admin-border);">
+                            <i class="fas fa-edit" style="color: var(--admin-warning);"></i>
+                            <span>مقاله "اتوماسیون کسب‌وکار" ویرایش شد</span>
+                            <span style="margin-right: auto; color: var(--admin-text-muted); font-size: var(--text-sm);">۱ ساعت پیش</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0;">
+                            <i class="fas fa-folder-plus" style="color: var(--admin-accent);"></i>
+                            <span>دسته‌بندی جدید "هوش مصنوعی" ایجاد شد</span>
+                            <span style="margin-right: auto; color: var(--admin-text-muted); font-size: var(--text-sm);">۳ ساعت پیش</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Posts Section -->
             <div id="posts" class="admin-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header">
                     <h2>مدیریت مقالات</h2>
                     <button class="btn btn-primary" id="add-post-btn">
-                        <i class="fas fa-plus"></i> افزودن مقاله جدید
+                        <i class="fas fa-plus"></i>
+                        افزودن مقاله جدید
                     </button>
                 </div>
 
@@ -431,7 +731,7 @@
                             <tr>
                                 <td colspan="6" style="text-align: center; padding: 2rem;">
                                     <div class="loading-spinner" style="margin: 0 auto;"></div>
-                                    <p>در حال بارگذاری...</p>
+                                    <p style="margin-top: 1rem; color: var(--admin-text-muted);">در حال بارگذاری...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -441,29 +741,99 @@
 
             <!-- Categories Section -->
             <div id="categories" class="admin-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header">
                     <h2>مدیریت دسته‌بندی‌ها</h2>
                     <button class="btn btn-primary" id="add-category-btn">
-                        <i class="fas fa-plus"></i> افزودن دسته‌بندی جدید
+                        <i class="fas fa-plus"></i>
+                        افزودن دسته‌بندی جدید
                     </button>
                 </div>
 
-                <div id="categories-list" class="stats-grid">
+                <div id="categories-list" class="categories-list">
                     <!-- Categories will be loaded here -->
                 </div>
             </div>
 
             <!-- Tags Section -->
             <div id="tags" class="admin-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header">
                     <h2>مدیریت برچسب‌ها</h2>
                     <button class="btn btn-primary" id="add-tag-btn">
-                        <i class="fas fa-plus"></i> افزودن برچسب جدید
+                        <i class="fas fa-plus"></i>
+                        افزودن برچسب جدید
                     </button>
                 </div>
 
-                <div id="tags-list" class="tags-cloud">
+                <div id="tags-list" class="tags-list">
                     <!-- Tags will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="admin-section">
+                <div class="section-header">
+                    <h2>آمار و گزارشات</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            دانلود گزارش
+                        </button>
+                        <button class="btn btn-secondary">
+                            <i class="fas fa-refresh"></i>
+                            بروزرسانی
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div style="background: var(--admin-bg); padding: 1.5rem; border-radius: var(--radius-xl); border: 1px solid var(--admin-border);">
+                        <h4 style="color: var(--admin-text); margin-bottom: 1rem;">بازدید هفتگی</h4>
+                        <div style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--admin-text-muted);">
+                            <i class="fas fa-chart-area" style="font-size: 3rem; opacity: 0.3;"></i>
+                        </div>
+                    </div>
+                    <div style="background: var(--admin-bg); padding: 1.5rem; border-radius: var(--radius-xl); border: 1px solid var(--admin-border);">
+                        <h4 style="color: var(--admin-text); margin-bottom: 1rem;">محبوب‌ترین مقالات</h4>
+                        <div style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--admin-text-muted);">
+                            <i class="fas fa-chart-bar" style="font-size: 3rem; opacity: 0.3;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="admin-section">
+                <div class="section-header">
+                    <h2>تنظیمات سیستم</h2>
+                    <button class="btn btn-success">
+                        <i class="fas fa-save"></i>
+                        ذخیره تغییرات
+                    </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h4 style="color: var(--admin-text); margin-bottom: 1rem;">تنظیمات عمومی</h4>
+                        <div class="form-group">
+                            <label for="site-title">عنوان سایت</label>
+                            <input type="text" id="site-title" class="form-control" value="بلاگ N98N">
+                        </div>
+                        <div class="form-group">
+                            <label for="site-description">توضیحات سایت</label>
+                            <textarea id="site-description" class="form-control">راهکارهای تخصصی اتوماسیون کسب‌وکار</textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--admin-text); margin-bottom: 1rem;">تنظیمات SEO</h4>
+                        <div class="form-group">
+                            <label for="meta-keywords">کلمات کلیدی</label>
+                            <input type="text" id="meta-keywords" class="form-control" value="اتوماسیون، کسب‌وکار، n98n">
+                        </div>
+                        <div class="form-group">
+                            <label for="google-analytics">کد Google Analytics</label>
+                            <input type="text" id="google-analytics" class="form-control" placeholder="GA-XXXXXXXXX">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -479,9 +849,15 @@
             <form id="post-form">
                 <input type="hidden" id="post-id">
                 
-                <div class="form-group">
-                    <label for="post-title">عنوان مقاله *</label>
-                    <input type="text" id="post-title" class="form-control" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label for="post-title">عنوان مقاله *</label>
+                        <input type="text" id="post-title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="post-slug">نامک (Slug)</label>
+                        <input type="text" id="post-slug" class="form-control">
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -491,37 +867,29 @@
 
                 <div class="form-group">
                     <label for="post-content">محتوای مقاله *</label>
-                    <textarea id="post-content" class="form-control content-editor" required placeholder="محتوای کامل مقاله..."></textarea>
-                    <button type="button" class="btn btn-success" id="insert-image-btn" style="margin-top:0.5rem;">افزودن تصویر در محتوا</button>
-                    <input type="file" id="content-image-file" accept="image/*" style="display:none;">
+                    <textarea id="post-content" class="form-control content-editor" required placeholder="محتوای کامل مقاله با فرمت Markdown..."></textarea>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div class="form-group">
                         <label for="author-name">نام نویسنده *</label>
                         <input type="text" id="author-name" class="form-control" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="author-email">ایمیل نویسنده</label>
-                        <input type="email" id="author-email" class="form-control">
+                        <label for="post-status">وضعیت انتشار</label>
+                        <select id="post-status" class="form-control">
+                            <option value="draft">پیش‌نویس</option>
+                            <option value="published">منتشر شده</option>
+                            <option value="archived">آرشیو شده</option>
+                        </select>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="post-status">وضعیت انتشار</label>
-                    <select id="post-status" class="form-control">
-                        <option value="draft">پیش‌نویس</option>
-                        <option value="published">منتشر شده</option>
-                        <option value="archived">آرشیو شده</option>
-                    </select>
                 </div>
 
                 <div class="form-group">
                     <label>تصویر شاخص</label>
                     <div class="image-upload" id="image-upload">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #6c757d; margin-bottom: 0.5rem;"></i>
-                        <p>تصویر را اینجا بکشید یا کلیک کنید</p>
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--admin-text-muted); margin-bottom: 0.5rem;"></i>
+                        <p style="color: var(--admin-text-muted); margin: 0;">تصویر را اینجا بکشید یا کلیک کنید</p>
                         <input type="file" id="featured-image" accept="image/*" style="display: none;">
                     </div>
                     <img id="image-preview" class="image-preview" style="display: none;">
@@ -529,10 +897,12 @@
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> ذخیره مقاله
+                        <i class="fas fa-save"></i>
+                        ذخیره مقاله
                     </button>
                     <button type="button" class="btn btn-secondary" id="cancel-post">
-                        <i class="fas fa-times"></i> انصراف
+                        <i class="fas fa-times"></i>
+                        انصراف
                     </button>
                 </div>
             </form>
@@ -562,9 +932,8 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
                         <label for="category-color">رنگ</label>
-                        <input type="color" id="category-color" class="form-control" value="#667eea">
+                        <input type="color" id="category-color" class="form-control" value="#8B5CF6">
                     </div>
-
                     <div class="form-group">
                         <label for="category-icon">آیکون</label>
                         <input type="text" id="category-icon" class="form-control" placeholder="fas fa-folder">
@@ -573,10 +942,12 @@
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> ذخیره دسته‌بندی
+                        <i class="fas fa-save"></i>
+                        ذخیره دسته‌بندی
                     </button>
                     <button type="button" class="btn btn-secondary" id="cancel-category">
-                        <i class="fas fa-times"></i> انصراف
+                        <i class="fas fa-times"></i>
+                        انصراف
                     </button>
                 </div>
             </form>
@@ -600,15 +971,17 @@
 
                 <div class="form-group">
                     <label for="tag-color">رنگ</label>
-                    <input type="color" id="tag-color" class="form-control" value="#6c757d">
+                    <input type="color" id="tag-color" class="form-control" value="#6B7280">
                 </div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> ذخیره برچسب
+                        <i class="fas fa-save"></i>
+                        ذخیره برچسب
                     </button>
                     <button type="button" class="btn btn-secondary" id="cancel-tag">
-                        <i class="fas fa-times"></i> انصراف
+                        <i class="fas fa-times"></i>
+                        انصراف
                     </button>
                 </div>
             </form>
@@ -619,15 +992,317 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-logo">
-                <div class="logo-icon">⬢</div>
-                <div class="logo-text">N98N</div>
+                <div class="logo-icon">N</div>
+                <div class="logo-text">n98n</div>
             </div>
-            <p>&copy; ۱۴۰۲ N98N. تمامی حقوق محفوظ است.</p>
+            <p>&copy; ۱۴۰۳ n98n. تمامی حقوق محفوظ است.</p>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script src="js/api.js"></script>
     <script src="js/admin.js"></script>
+    
+    <script>
+        // Enhanced Admin Panel JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize admin functionality
+            initializeAdmin();
+            
+            // Load initial data
+            loadDashboardData();
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+
+        function initializeAdmin() {
+            // Check authentication
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+            
+            // Initialize sections
+            showSection('dashboard');
+        }
+
+        function setupEventListeners() {
+            // Navigation buttons
+            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const section = this.dataset.section;
+                    showSection(section);
+                    
+                    // Update active state
+                    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Modal controls
+            setupModalControls();
+            
+            // Form submissions
+            setupFormSubmissions();
+            
+            // Logout functionality
+            document.getElementById('logout-btn')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('آیا مطمئن هستید که می‌خواهید خارج شوید؟')) {
+                    localStorage.removeItem('admin_token');
+                    window.location.href = 'admin-login.html';
+                }
+            });
+        }
+
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show target section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                
+                // Load section-specific data
+                loadSectionData(sectionId);
+            }
+        }
+
+        function loadDashboardData() {
+            // Simulate loading dashboard stats
+            setTimeout(() => {
+                document.getElementById('total-posts').textContent = '۲۴';
+                document.getElementById('published-posts').textContent = '۱۸';
+                document.getElementById('draft-posts').textContent = '۶';
+                document.getElementById('total-views').textContent = '۱۲,۳۴۵';
+            }, 1000);
+        }
+
+        function loadSectionData(sectionId) {
+            switch(sectionId) {
+                case 'posts':
+                    loadPostsData();
+                    break;
+                case 'categories':
+                    loadCategoriesData();
+                    break;
+                case 'tags':
+                    loadTagsData();
+                    break;
+                case 'analytics':
+                    loadAnalyticsData();
+                    break;
+            }
+        }
+
+        function loadPostsData() {
+            // Simulate loading posts
+            const tbody = document.getElementById('posts-table-body');
+            setTimeout(() => {
+                tbody.innerHTML = `
+                    <tr>
+                        <td>راهنمای کامل اتوماسیون کسب‌وکار</td>
+                        <td>محمد احمدی</td>
+                        <td><span class="status-badge status-published">منتشر شده</span></td>
+                        <td>۱۴۰۳/۰۳/۱۵</td>
+                        <td>۱,۲۳۴</td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>بهترین ابزارهای مارکتینگ دیجیتال</td>
+                        <td>سارا محمدی</td>
+                        <td><span class="status-badge status-draft">پیش‌نویس</span></td>
+                        <td>-</td>
+                        <td>۰</td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }, 500);
+        }
+
+        function loadCategoriesData() {
+            const container = document.getElementById('categories-list');
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="category-card">
+                        <h4>اتوماسیون کسب‌وکار</h4>
+                        <p>راهکارها و ابزارهای اتوماسیون فرآیندهای کسب‌وکار</p>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                                ویرایش
+                            </button>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <h4>مارکتینگ دیجیتال</h4>
+                        <p>استراتژی‌ها و تکنیک‌های مارکتینگ آنلاین</p>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                                ویرایش
+                            </button>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function loadTagsData() {
+            const container = document.getElementById('tags-list');
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="tag-card">
+                        <h4>SEO</h4>
+                        <p>بهینه‌سازی موتورهای جستجو</p>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                                ویرایش
+                            </button>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tag-card">
+                        <h4>CRM</h4>
+                        <p>مدیریت ارتباط با مشتری</p>
+                        <div class="card-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-edit"></i>
+                                ویرایش
+                            </button>
+                            <button class="btn btn-danger">
+                                <i class="fas fa-trash"></i>
+                                حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function loadAnalyticsData() {
+            // Simulate analytics loading
+            console.log('Loading analytics data...');
+        }
+
+        function setupModalControls() {
+            // Modal open buttons
+            document.getElementById('add-post-btn')?.addEventListener('click', () => openModal('post-modal'));
+            document.getElementById('add-category-btn')?.addEventListener('click', () => openModal('category-modal'));
+            document.getElementById('add-tag-btn')?.addEventListener('click', () => openModal('tag-modal'));
+            
+            // Modal close buttons
+            document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modal = this.closest('.modal');
+                    closeModal(modal.id);
+                });
+            });
+            
+            // Close modal on backdrop click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeModal(this.id);
+                    }
+                });
+            });
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function setupFormSubmissions() {
+            // Handle form submissions here
+            document.getElementById('post-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('مقاله با موفقیت ذخیره شد', 'success');
+                closeModal('post-modal');
+            });
+            
+            document.getElementById('category-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('دسته‌بندی با موفقیت ذخیره شد', 'success');
+                closeModal('category-modal');
+            });
+            
+            document.getElementById('tag-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('برچسب با موفقیت ذخیره شد', 'success');
+                closeModal('tag-modal');
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+
+        // Initialize mobile menu
+        const mobileBtn = document.querySelector('.mobile-menu-btn');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        if (mobileBtn && navMenu) {
+            mobileBtn.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+            });
+        }
+    </script>
 </body>
 </html>
