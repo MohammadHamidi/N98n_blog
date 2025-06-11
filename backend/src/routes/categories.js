@@ -2,6 +2,8 @@
 const express = require('express');
 const { body, validationResult, param } = require('express-validator');
 const { Category } = require('../models/Category');
+const auth = require('../middleware/auth'); // ADD THIS LINE
+
 
 const router = express.Router();
 
@@ -79,7 +81,7 @@ router.get('/:slug', async (req, res) => {
 });
 
 // POST /api/categories - Create new category
-router.post('/', validateCategory, handleValidationErrors, async (req, res) => {
+router.post('/', auth, validateCategory, handleValidationErrors, async (req, res) => {
   try {
     const category = new Category({
       name: req.body.name,
@@ -114,7 +116,7 @@ router.post('/', validateCategory, handleValidationErrors, async (req, res) => {
 });
 
 // PUT /api/categories/:id - Update category
-router.put('/:id', [
+router.put('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه دسته‌بندی نامعتبر است')
 ], validateCategory, handleValidationErrors, async (req, res) => {
   try {
@@ -152,7 +154,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/categories/:id - Delete category
-router.delete('/:id', [
+router.delete('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه دسته‌بندی نامعتبر است')
 ], handleValidationErrors, async (req, res) => {
   try {

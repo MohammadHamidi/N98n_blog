@@ -1,3 +1,4 @@
+require('dotenv').config(); // ADD THIS as first line
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -6,7 +7,7 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-
+const fs = require('fs'); // ADD THIS
 // Import routes
 const postsRoutes = require('./routes/posts');
 const categoriesRoutes = require('./routes/categories');
@@ -14,7 +15,11 @@ const tagsRoutes = require('./routes/tags'); // Changed from './routes/Tag' to '
 
 // Import database config
 const connectDB = require('./config/database');
-
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('📁 Upload directory created:', uploadDir);
+}
 const app = express();
 const PORT = process.env.PORT || 3000;
 

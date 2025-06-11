@@ -291,7 +291,7 @@ router.post(
 
 
 // PUT /api/posts/:id - Update post
-router.put('/:id', [
+router.put('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه پست نامعتبر است')
 ], upload.single('featuredImage'), validatePost, handleValidationErrors, async (req, res) => {
   try {
@@ -362,7 +362,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/posts/:id - Delete post
-router.delete('/:id', [
+router.delete('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه پست نامعتبر است')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -389,6 +389,7 @@ router.delete('/:id', [
   }
 });
 
+// GET /api/posts/stats/summary - Get blog statistics
 // GET /api/posts/stats/summary - Get blog statistics
 router.get('/stats/summary', async (req, res) => {
   try {
@@ -419,5 +420,4 @@ router.get('/stats/summary', async (req, res) => {
     });
   }
 });
-
 module.exports = router;

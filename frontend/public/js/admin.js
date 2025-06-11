@@ -488,27 +488,40 @@ class AdminPanel {
     document.getElementById('post-id').value = '';
     document.getElementById('image-preview').style.display = 'none';
   }
-
-  async savePost() {
-    try {
-      loadingManager.show('save-post');
-      
-      const formData = new FormData();
-      const postId = document.getElementById('post-id').value;
-      
-      // Add form fields
-      formData.append('title', document.getElementById('post-title').value);
-      formData.append('excerpt', document.getElementById('post-excerpt').value);
-      formData.append('content', document.getElementById('post-content').value);
-      formData.append('author.name', document.getElementById('author-name').value);
-      formData.append('author.email', document.getElementById('author-email').value);
-      formData.append('status', document.getElementById('post-status').value);
-      
-      // Add image if selected
-      const imageFile = document.getElementById('featured-image').files[0];
-      if (imageFile) {
-        formData.append('featuredImage', imageFile);
-      }
+async savePost() {
+  const formData = new FormData();
+  
+  // Basic fields
+  formData.append('title', document.getElementById('post-title').value);
+  formData.append('excerpt', document.getElementById('post-excerpt').value);
+  formData.append('content', document.getElementById('post-content').value);
+  formData.append('status', document.getElementById('post-status').value);
+  
+  // Author object - Backend expects nested object
+  const authorData = {
+    name: document.getElementById('author-name').value,
+    email: document.getElementById('author-email').value
+  };
+  formData.append('author', JSON.stringify(authorData));
+  
+  // Categories (if selected)
+  const categories = Array.from(document.getElementById('post-categories').selectedOptions)
+    .map(option => option.value);
+  if (categories.length > 0) {
+    formData.append('categories', JSON.stringify(categories));
+  }
+  
+  // Tags
+  const tags = this.getSelectedTags();
+  if (tags.length > 0) {
+    formData.append('tags', JSON.stringify(tags));
+  }
+  
+  // Featured image
+  const imageFile = document.getElementById('featured-image').files[0];
+  if (imageFile) {
+    formData.append('featuredImage', imageFile);
+  }
 
       let response;
       if (postId) {

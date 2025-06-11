@@ -8,19 +8,17 @@ class BlogAPI {
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
   }
 
-  // Token management
-  setToken(token) {
-    localStorage.setItem('blog_token', token);
-  }
+getToken() {
+  return localStorage.getItem('admin_token'); // Changed from 'blog_token'
+}
 
-  getToken() {
-    return localStorage.getItem('blog_token');
-  }
+setToken(token) {
+  localStorage.setItem('admin_token', token); // Changed from 'blog_token'
+}
 
-  removeToken() {
-    localStorage.removeItem('blog_token');
-  }
-
+removeToken() {
+  localStorage.removeItem('admin_token'); // Changed from 'blog_token'
+}
   // Generic fetch method with error handling
   async fetch(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
@@ -93,19 +91,10 @@ class BlogAPI {
     this.setCache(cacheKey, response);
     return response;
   }
-
-  async getFeaturedPosts() {
-    const cacheKey = 'featured_posts';
-    
-    // Check cache first
-    const cached = this.getCached(cacheKey);
-    if (cached) return cached;
-
-    const response = await this.fetch('/posts/featured');
-    this.setCache(cacheKey, response);
-    return response;
-  }
-
+async getFeaturedPosts() {
+  // Get posts sorted by views instead
+  return await this.fetch('/posts?sort=-views&limit=5');
+}
   async createPost(formData) {
     return await this.fetch('/posts', {
       method: 'POST',
@@ -129,17 +118,9 @@ class BlogAPI {
   }
 
   async getPostStats() {
-    const cacheKey = 'post_stats';
-    
-    // Check cache first
-    const cached = this.getCached(cacheKey);
-    if (cached) return cached;
-
-    const response = await this.fetch('/posts/stats/summary');
-    this.setCache(cacheKey, response);
-    return response;
-  }
-
+  const response = await this.fetch('/posts/stats');
+  return response;
+}
   // Categories API
   async getCategories() {
     const cacheKey = 'categories';

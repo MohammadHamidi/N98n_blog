@@ -2,6 +2,8 @@
 const express = require('express');
 const { body, validationResult, param } = require('express-validator');
 const { Tag } = require('../models/Category');
+const auth = require('../middleware/auth'); // ADD THIS LINE
+
 
 const router = express.Router();
 
@@ -75,7 +77,7 @@ router.get('/:slug', async (req, res) => {
 });
 
 // POST /api/tags - Create new tag
-router.post('/', validateTag, handleValidationErrors, async (req, res) => {
+router.post('/', auth, validateTag, handleValidationErrors, async (req, res) => {
   try {
     const tag = new Tag({
       name: req.body.name,
@@ -108,7 +110,7 @@ router.post('/', validateTag, handleValidationErrors, async (req, res) => {
 });
 
 // PUT /api/tags/:id - Update tag
-router.put('/:id', [
+router.put('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه برچسب نامعتبر است')
 ], validateTag, handleValidationErrors, async (req, res) => {
   try {
@@ -144,7 +146,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/tags/:id - Delete tag
-router.delete('/:id', [
+router.delete('/:id', auth, [
   param('id').isMongoId().withMessage('شناسه برچسب نامعتبر است')
 ], handleValidationErrors, async (req, res) => {
   try {
